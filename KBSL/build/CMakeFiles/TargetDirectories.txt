@@ -3,6 +3,7 @@
 /home/tim/Desktop/Kinect-Based-Sound-Localization/KBSL/build/CMakeFiles/rebuild_cache.dir
 /home/tim/Desktop/Kinect-Based-Sound-Localization/KBSL/build/CMakeFiles/edit_cache.dir
 /home/tim/Desktop/Kinect-Based-Sound-Localization/KBSL/build/CMakeFiles/install/strip.dir
+/home/tim/Desktop/Kinect-Based-Sound-Localization/KBSL/build/CMakeFiles/KBSLBag.dir
 /home/tim/Desktop/Kinect-Based-Sound-Localization/KBSL/build/CMakeFiles/KBSL.dir
 /home/tim/Desktop/Kinect-Based-Sound-Localization/KBSL/build/CMakeFiles/rospack_gensrv_all.dir
 /home/tim/Desktop/Kinect-Based-Sound-Localization/KBSL/build/CMakeFiles/download_extra_data.dir

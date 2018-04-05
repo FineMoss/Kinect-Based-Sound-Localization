@@ -23,6 +23,11 @@ using Eigen::Vector3f;
 using geometry_msgs::Point32;
 using namespace std;
 
+Vector3f floor_norm(1.0,0,0);
+float z_min_ground = -1.0;
+float z_max_ground = 1.0;
+float norm_tol = 1.0;
+
 // Publisher for 3D plane filtered point clouds.
 ros::Publisher filtered_point_cloud_publisher_;
 
@@ -257,7 +262,7 @@ void PointCloudCallback(const sensor_msgs::PointCloud& point_cloud_msg) {
 }
 
 int main(int argc, char **argv) {
-  ros::init(argc, argv, "assignment3");
+  ros::init(argc, argv, "KBSL");
   ros::NodeHandle n;
 
   ros::ServiceServer transform_point_service =

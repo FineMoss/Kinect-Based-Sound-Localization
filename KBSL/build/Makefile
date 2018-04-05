@@ -155,6 +155,19 @@ depend:
 .PHONY : depend
 
 #=============================================================================
+# Target rules for targets named KBSLBag
+
+# Build rule for target.
+KBSLBag: cmake_check_build_system
+	$(MAKE) -f CMakeFiles/Makefile2 KBSLBag
+.PHONY : KBSLBag
+
+# fast build rule for target.
+KBSLBag/fast:
+	$(MAKE) -f CMakeFiles/KBSLBag.dir/build.make CMakeFiles/KBSLBag.dir/build
+.PHONY : KBSLBag/fast
+
+#=============================================================================
 # Target rules for targets named KBSL
 
 # Build rule for target.
@@ -532,6 +545,33 @@ src/KBSL.cpp.s:
 	$(MAKE) -f CMakeFiles/KBSL.dir/build.make CMakeFiles/KBSL.dir/src/KBSL.cpp.s
 .PHONY : src/KBSL.cpp.s
 
+src/KBSL_Bag.o: src/KBSL_Bag.cpp.o
+
+.PHONY : src/KBSL_Bag.o
+
+# target to build an object file
+src/KBSL_Bag.cpp.o:
+	$(MAKE) -f CMakeFiles/KBSLBag.dir/build.make CMakeFiles/KBSLBag.dir/src/KBSL_Bag.cpp.o
+.PHONY : src/KBSL_Bag.cpp.o
+
+src/KBSL_Bag.i: src/KBSL_Bag.cpp.i
+
+.PHONY : src/KBSL_Bag.i
+
+# target to preprocess a source file
+src/KBSL_Bag.cpp.i:
+	$(MAKE) -f CMakeFiles/KBSLBag.dir/build.make CMakeFiles/KBSLBag.dir/src/KBSL_Bag.cpp.i
+.PHONY : src/KBSL_Bag.cpp.i
+
+src/KBSL_Bag.s: src/KBSL_Bag.cpp.s
+
+.PHONY : src/KBSL_Bag.s
+
+# target to generate assembly for a file
+src/KBSL_Bag.cpp.s:
+	$(MAKE) -f CMakeFiles/KBSLBag.dir/build.make CMakeFiles/KBSLBag.dir/src/KBSL_Bag.cpp.s
+.PHONY : src/KBSL_Bag.cpp.s
+
 # Help Target
 help:
 	@echo "The following are some of the valid targets for this Makefile:"
@@ -543,6 +583,7 @@ help:
 	@echo "... rebuild_cache"
 	@echo "... edit_cache"
 	@echo "... install/strip"
+	@echo "... KBSLBag"
 	@echo "... KBSL"
 	@echo "... rospack_gensrv_all"
 	@echo "... download_extra_data"
@@ -574,6 +615,9 @@ help:
 	@echo "... src/KBSL.o"
 	@echo "... src/KBSL.i"
 	@echo "... src/KBSL.s"
+	@echo "... src/KBSL_Bag.o"
+	@echo "... src/KBSL_Bag.i"
+	@echo "... src/KBSL_Bag.s"
 .PHONY : help
 
 
