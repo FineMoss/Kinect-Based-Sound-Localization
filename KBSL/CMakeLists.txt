@@ -11,7 +11,5 @@ ROSBUILD_GENSRV()
 
 SET(libs roslib roscpp)
 
-ROSBUILD_ADD_EXECUTABLE(assignment3 src/assignment3.cpp)
-TARGET_LINK_LIBRARIES(assignment3 ${libs})
-
-#ADD_EXECUTABLE(eigen_examples src/eigen_examples.cpp)
+ROSBUILD_ADD_EXECUTABLE(KBSL src/KBSL.cpp)
+TARGET_LINK_LIBRARIES(KBSL ${libs})
