@@ -1,3 +1,16 @@
+/*
+Use this to generate a bag file for the Kinect Sensor
+
+Steps:
+
+1. Make sure the Kinect is outputting data to "/COMPSCI403/PointCloudIn"
+2. Run this file "rosrun KBSL KBSLBag"
+3. Open new terminal and cd into KBSL/bagfiles directory
+4. run "rosbag record -a"
+ -- might be better to run "rosbag record /COMPSCI403/PointCloud"
+5. when done ctrl-c to end the bag file program
+*/
+
 #include <algorithm>
 #include <iostream>
 #include <ros/ros.h>
