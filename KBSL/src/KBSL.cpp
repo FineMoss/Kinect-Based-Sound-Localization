@@ -288,13 +288,16 @@ void PointCloudCallback(const sensor_msgs::PointCloud& point_cloud_msg) {
         ConvertVectorToPoint(filtered_point_cloud_obstacles[i]);
   }
 
-
+  //TEST WHAT THE POINT CLOUD CONTAIN
+  filtered_point_cloud_publisher_.publish(ground_point_cloud);
 
 }
 
 int main(int argc, char **argv) {
   ros::init(argc, argv, "KBSL");
   ros::NodeHandle n;
+
+  filtered_point_cloud_publisher_ = n.advertise<sensor_msgs::PointCloud>("/COMPSCI403/PointCloudTest", 1);
 
   ros::Subscriber point_cloud_subscriber =
     n.subscribe("/COMPSCI403/PointCloud", 1, PointCloudCallback);
