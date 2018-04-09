@@ -33,6 +33,10 @@ sensor_msgs::PointCloud full_point_cloud;
 sensor_msgs::PointCloud ground_point_cloud;
 sensor_msgs::PointCloud obstacles_point_cloud;
 
+//DownSampled PointCloud ----- Convert These to Sound
+sensor_msgs::PointCloud ground_obs_pnts;
+sensor_msgs::PointCloud obs_pnts;
+
 
 // Publisher for 3D plane filtered point clouds.
 ros::Publisher filtered_point_cloud_publisher_;
