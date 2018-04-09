@@ -37,7 +37,6 @@ sensor_msgs::PointCloud obstacles_point_cloud;
 sensor_msgs::PointCloud ground_obs_pnts;
 sensor_msgs::PointCloud obs_pnts;
 
-
 // Publisher for 3D plane filtered point clouds.
 ros::Publisher filtered_point_cloud_publisher_;
 
@@ -246,6 +245,7 @@ int main(int argc, char **argv) {
       // ROS_INFO("%f", gCurrV);
 
       //Call Function To update floor and obstacle point clouds
+      updateClouds();
 
       ros::spinOnce();
       loop.sleep();
