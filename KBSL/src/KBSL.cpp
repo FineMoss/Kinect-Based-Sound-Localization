@@ -24,10 +24,11 @@ using geometry_msgs::Point32;
 using namespace std;
 
 Vector3f floor_norm(1.0,0,0);
-// float z_min_ground = -1.0;
-float z_max_ground = 1.0;
 float norm_tol = 1.0;
 
+float max_ground = 0.0;
+
+sensor_msgs::PointCloud full_point_cloud;
 // Message for published filtered 3D point clouds.
 sensor_msgs::PointCloud ground_point_cloud;
 sensor_msgs::PointCloud obstacles_point_cloud;
@@ -38,7 +39,7 @@ ros::Publisher filtered_point_cloud_publisher_;
 
 // RANSAC parameters.
 static const int kIterations = 50;
-static const float kMinInlierFraction = 0.15;
+static const float kMinInlierFraction = 0.5;
 static const float kEpsilon = 0.02;
 
 bool npInRange(Vector3f n, Vector3f p){
@@ -63,27 +64,6 @@ Point32 ConvertVectorToPoint(const Vector3f& vector) {
   return point;
 }
 
-// bool TransformPointService(
-//     KBSL::TransformPointSrv::Request& req,
-//     KBSL::TransformPointSrv::Response& res) {
-//   const Vector3f P(req.P.x, req.P.y, req.P.z);
-
-//   Matrix3f R;
-//   for (int row = 0; row < 3; ++row) {
-//     for (int col = 0; col < 3; ++col) {
-//       R(row, col) = req.R[col * 3 + row];
-//     }
-//   }
-//   const Vector3f T(req.T.x, req.T.y, req.T.z);
-
-//   // Compute P_prime from P, R, T.
-//   Vector3f P_prime = R * P + T;
-
-//   // Convert to ROS type to return the result.
-//   res.P_prime = ConvertVectorToPoint(P_prime);
-//   return true;
-// }
-
 void FitMinimalPlane(const Vector3f& P1, const Vector3f& P2, const Vector3f& P3,
                      Vector3f* n, Vector3f* P0) {
   *P0 = P1;
@@ -91,24 +71,6 @@ void FitMinimalPlane(const Vector3f& P1, const Vector3f& P2, const Vector3f& P3,
   const Vector3f P31 = P3 - P1;
   *n = (P21.cross(P31)).normalized();
 }
-
-// bool FitMinimalPlaneService(
-//     KBSL::FitMinimalPlaneSrv::Request& req,
-//     KBSL::FitMinimalPlaneSrv::Response& res) {
-
-//   const Vector3f P1 = ConvertPointToVector(req.P1);
-//   const Vector3f P2 = ConvertPointToVector(req.P2);
-//   const Vector3f P3 = ConvertPointToVector(req.P3);
-
-//   // Compute n and P0 from P1, P2, P3.
-//   Vector3f n;
-//   Vector3f P0;
-//   FitMinimalPlane(P1, P2, P3, &n, &P0);
-
-//   res.n = ConvertVectorToPoint(n);
-//   res.P0 = ConvertVectorToPoint(P0);
-//   return true;
-// }
 
 void FindInliers(const Vector3f& n, const Vector3f& P0, float epsilon,
     const vector<Vector3f>& point_cloud, vector<Vector3f>* inliers) {
@@ -134,31 +96,6 @@ void FindInliersFloorObs(const Vector3f& n, const Vector3f& P0, float epsilon,
     }
   }
 }
-
-// bool FindInliersService(
-//     KBSL::FindInliersSrv::Request& req,
-//     KBSL::FindInliersSrv::Response& res) {
-
-//   const Vector3f n = ConvertPointToVector(req.n);
-//   const Vector3f P0 = ConvertPointToVector(req.P0);
-//   const float epsilon = req.epsilon;
-
-//   // Copy over all the points.
-//   vector<Vector3f> point_cloud(req.P.size());
-//   for (size_t i = 0; i < point_cloud.size(); ++i) {
-//     point_cloud[i] = ConvertPointToVector(req.P[i]);
-//   }
-
-//   vector<Vector3f> inliers;
-//   // Compute the inliers from n, P0, epsilon, and the points in the PointCloud
-//   FindInliers(n, P0, epsilon, point_cloud, &inliers);
-
-//   res.P.resize(inliers.size());
-//   for (size_t i = 0; i < inliers.size(); ++i) {
-//     res.P[i] = ConvertVectorToPoint(inliers[i]);
-//   }
-//   return true;
-// }
 
 Vector3f PickRandomPoint(const vector<Vector3f>& point_cloud) {
   const int i = rand() % (point_cloud.size());
@@ -211,27 +148,17 @@ void FitBestPlane(const vector<Vector3f>& point_cloud, Vector3f* n_ptr,
   n = GetSmallestEigenVector(M);
 }
 
-// bool FitBestPlaneService(
-//     KBSL::FitBestPlaneSrv::Request& req,
-//     KBSL::FitBestPlaneSrv::Response& res) {
-//   // Copy over all the points.
-//   vector<Vector3f> point_cloud(req.P.size());
-//   for (size_t i = 0; i < point_cloud.size(); ++i) {
-//     point_cloud[i] = ConvertPointToVector(req.P[i]);
-//   }
-
-//   Vector3f n;
-//   Vector3f P0;
-//   // Compute n and P0 from the point cloud.
-//   FitBestPlane(point_cloud, &n, &P0);
-
-//   res.n = ConvertVectorToPoint(n);
-//   res.P0 = ConvertVectorToPoint(P0);
-//   return true;
-// }
-
 void RANSAC_MOD(const vector<Vector3f>& point_cloud, Vector3f* n_ptr,
             Vector3f* P0_ptr) {
+
+  vector<Vector3f> near_floor_pnts;
+  // Copy over the input point cloud - filtering out points above y-max
+  for (size_t i = 0; i < point_cloud.size(); ++i) {
+    if(point_cloud[i].y() < max_ground){
+      near_floor_pnts.push_back(point_cloud[i]);
+    }
+  }
+
   // Alias of n.
   Vector3f& n = *n_ptr;
   // Alias of P0.
@@ -243,27 +170,34 @@ void RANSAC_MOD(const vector<Vector3f>& point_cloud, Vector3f* n_ptr,
   int i = 0;
   do {
     ++i;
-    const Vector3f P1 = PickRandomPoint(point_cloud);
-    const Vector3f P2 = PickRandomPoint(point_cloud);
-    const Vector3f P3 = PickRandomPoint(point_cloud);
+    const Vector3f P1 = PickRandomPoint(near_floor_pnts);
+    const Vector3f P2 = PickRandomPoint(near_floor_pnts);
+    const Vector3f P3 = PickRandomPoint(near_floor_pnts);
     FitMinimalPlane(P1, P2, P3, &n, &P0);
-    FindInliers(n, P0, kEpsilon, point_cloud, &inliers);
+    FindInliers(n, P0, kEpsilon, near_floor_pnts, &inliers);
     inlier_fraction = static_cast<float>(inliers.size()) /
-        static_cast<float>(point_cloud.size());
+        static_cast<float>(near_floor_pnts.size());
   } while (i < kIterations && inlier_fraction < kMinInlierFraction && npInRange(*n_ptr, *P0_ptr));
   FitBestPlane(inliers, n_ptr, P0_ptr);
 }
 
 void PointCloudCallback(const sensor_msgs::PointCloud& point_cloud_msg) {
-  ground_point_cloud.header = point_cloud_msg.header;
-  obstacles_point_cloud.header = point_cloud_msg.header;
+  //TODO perform rotation
+  //Perform transformation
+  full_point_cloud = point_cloud_msg;
+
+}
+
+void updateClouds(){
+  ground_point_cloud.header = full_point_cloud.header;
+  obstacles_point_cloud.header = full_point_cloud.header;
 
   // Create a Vector3f point cloud, of the same size as the input point cloud.
-  vector<Vector3f> point_cloud(point_cloud_msg.points.size());
+  vector<Vector3f> point_cloud(full_point_cloud.points.size());
 
   // Copy over the input point cloud.
   for (size_t i = 0; i < point_cloud.size(); ++i) {
-    point_cloud[i] = ConvertPointToVector(point_cloud_msg.points[i]);
+    point_cloud[i] = ConvertPointToVector(full_point_cloud.points[i]);
   }
 
   vector<Vector3f> filtered_point_cloud_ground;
@@ -289,9 +223,9 @@ void PointCloudCallback(const sensor_msgs::PointCloud& point_cloud_msg) {
   }
 
   //TEST WHAT THE POINT CLOUD CONTAIN
-  filtered_point_cloud_publisher_.publish(ground_point_cloud);
-
+  //filtered_point_cloud_publisher_.publish(ground_point_cloud);
 }
+
 
 int main(int argc, char **argv) {
   ros::init(argc, argv, "KBSL");
@@ -302,7 +236,16 @@ int main(int argc, char **argv) {
   ros::Subscriber point_cloud_subscriber =
     n.subscribe("/COMPSCI403/PointCloud", 1, PointCloudCallback);
 
-  ros::spin();
+
+    ros::Rate loop(20);
+    while (ros::ok()) {
+      // ROS_INFO("%f", gCurrV);
+
+      //Call Function To update floor and obstacle point clouds
+
+      ros::spinOnce();
+      loop.sleep();
+    }
 
   return 0;
 }
