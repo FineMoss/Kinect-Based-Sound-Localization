@@ -26,7 +26,7 @@ using namespace std;
 Vector3f floor_norm(1.0,0,0);
 float norm_tol = 1.0;
 
-float max_ground = 0.0;
+float max_ground = 3.0;
 
 sensor_msgs::PointCloud full_point_cloud;
 // Message for published filtered 3D point clouds.
@@ -42,8 +42,29 @@ ros::Publisher filtered_point_cloud_publisher_;
 
 // RANSAC parameters.
 static const int kIterations = 50;
-static const float kMinInlierFraction = 0.5;
-static const float kEpsilon = 0.02;
+static const float kMinInlierFraction = 0.7;
+static const float kEpsilon = 0.01;
+
+// bool TransformPointService(
+//     compsci403_assignment3::TransformPointSrv::Request& req,
+//     compsci403_assignment3::TransformPointSrv::Response& res) {
+//   const Vector3f P(req.P.x, req.P.y, req.P.z);
+
+//   Matrix3f R;
+//   for (int row = 0; row < 3; ++row) {
+//     for (int col = 0; col < 3; ++col) {
+//       R(row, col) = req.R[col * 3 + row];
+//     }
+//   }
+//   const Vector3f T(req.T.x, req.T.y, req.T.z);
+
+//   // Compute P_prime from P, R, T.
+//   Vector3f P_prime = R * P + T;
+
+//   // Convert to ROS type to return the result.
+//   res.P_prime = ConvertVectorToPoint(P_prime);
+//   return true;
+// }
 
 bool npInRange(Vector3f n, Vector3f p){
   //TODO
@@ -224,14 +245,14 @@ void updateClouds(){
   }
 
   //Copy over the output for obstacle points
-  obstacles_point_cloud.points.resize(filtered_point_cloud_ground.size());
-  for (size_t i = 0; i < filtered_point_cloud_ground.size(); ++i) {
-    ground_point_cloud.points[i] =
+  obstacles_point_cloud.points.resize(filtered_point_cloud_obstacles.size());
+  for (size_t i = 0; i < filtered_point_cloud_obstacles.size(); ++i) {
+    obstacles_point_cloud.points[i] =
         ConvertVectorToPoint(filtered_point_cloud_obstacles[i]);
   }
 
   //TEST WHAT THE POINT CLOUD CONTAIN
-  //filtered_point_cloud_publisher_.publish(ground_point_cloud);
+  filtered_point_cloud_publisher_.publish(obstacles_point_cloud);
 }
 
 
@@ -239,13 +260,13 @@ int main(int argc, char **argv) {
   ros::init(argc, argv, "KBSL");
   ros::NodeHandle n;
 
-  filtered_point_cloud_publisher_ = n.advertise<sensor_msgs::PointCloud>("/COMPSCI403/PointCloudTest", 1);
+  filtered_point_cloud_publisher_ = n.advertise<sensor_msgs::PointCloud>("/COMPSCI403/FilteredPointCloud", 1);
 
   ros::Subscriber point_cloud_subscriber =
     n.subscribe("/COMPSCI403/PointCloud", 1, PointCloudCallback);
 
 
-    ros::Rate loop(20);
+    ros::Rate loop(3);
     while (ros::ok()) {
 
       //Call Function To update floor and obstacle point clouds
