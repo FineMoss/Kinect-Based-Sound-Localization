@@ -45,26 +45,6 @@ static const int kIterations = 50;
 static const float kMinInlierFraction = 0.7;
 static const float kEpsilon = 0.01;
 
-// bool TransformPointService(
-//     compsci403_assignment3::TransformPointSrv::Request& req,
-//     compsci403_assignment3::TransformPointSrv::Response& res) {
-//   const Vector3f P(req.P.x, req.P.y, req.P.z);
-
-//   Matrix3f R;
-//   for (int row = 0; row < 3; ++row) {
-//     for (int col = 0; col < 3; ++col) {
-//       R(row, col) = req.R[col * 3 + row];
-//     }
-//   }
-//   const Vector3f T(req.T.x, req.T.y, req.T.z);
-
-//   // Compute P_prime from P, R, T.
-//   Vector3f P_prime = R * P + T;
-
-//   // Convert to ROS type to return the result.
-//   res.P_prime = ConvertVectorToPoint(P_prime);
-//   return true;
-// }
 
 bool npInRange(Vector3f n, Vector3f p){
   //TODO
@@ -213,6 +193,22 @@ void RANSAC_MOD(const vector<Vector3f>& point_cloud, Vector3f* n_ptr,
 void PointCloudCallback(const sensor_msgs::PointCloud& point_cloud_msg) {
   //TODO perform rotation
   //Perform transformation
+    // const Vector3f P(req.P.x, req.P.y, req.P.z);
+
+    // Matrix3f R;
+    // for (int row = 0; row < 3; ++row) {
+    //   for (int col = 0; col < 3; ++col) {
+    //     R(row, col) = req.R[col * 3 + row];
+    //   }
+    // }
+    // const Vector3f T(req.T.x, req.T.y, req.T.z);
+
+    // // Compute P_prime from P, R, T.
+    // Vector3f P_prime = R * P + T;
+
+    // // Convert to ROS type to return the result.
+    // //   res.P_prime = ConvertVectorToPoint(P_prime);
+
   full_point_cloud = point_cloud_msg;
 
 }
@@ -252,7 +248,7 @@ void updateClouds(){
   }
 
   //TEST WHAT THE POINT CLOUD CONTAIN
-  filtered_point_cloud_publisher_.publish(obstacles_point_cloud);
+  // filtered_point_cloud_publisher_.publish(obstacles_point_cloud);
 }
 
 
