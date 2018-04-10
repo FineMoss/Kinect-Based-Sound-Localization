@@ -101,8 +101,13 @@ void FindInliersFloorObs(const Vector3f& n, const Vector3f& P0, float epsilon,
 }
 
 Vector3f PickRandomPoint(const vector<Vector3f>& point_cloud) {
-  const int i = rand() % (point_cloud.size());
-  return point_cloud[i];
+  if(point_cloud.size() == 0){
+    return Vector3f();
+  }
+  else{
+    const int i = rand() % (point_cloud.size());
+    return point_cloud[i];
+  }
 }
 
 Vector3f GetSmallestEigenVector(const Matrix3f& M) {
@@ -242,7 +247,6 @@ int main(int argc, char **argv) {
 
     ros::Rate loop(20);
     while (ros::ok()) {
-      // ROS_INFO("%f", gCurrV);
 
       //Call Function To update floor and obstacle point clouds
       updateClouds();
