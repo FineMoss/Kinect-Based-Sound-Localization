@@ -93,6 +93,7 @@ void FindInliersFloorObs(const Vector3f& n, const Vector3f& P0, float epsilon,
 
   inliers->clear();
   for (size_t i = 0; i < point_cloud.size(); ++i) {
+
     if (fabs((point_cloud[i] - P0).dot(n)) < epsilon) {
       inliers->push_back(point_cloud[i]);
     }
@@ -164,7 +165,7 @@ void RANSAC_MOD(const vector<Vector3f>& point_cloud, Vector3f* n_ptr,
   vector<Vector3f> near_floor_pnts;
   // Copy over the input point cloud - filtering out points above y-max
   for (size_t i = 0; i < point_cloud.size(); ++i) {
-    if(point_cloud[i].y() < max_ground){
+    if(point_cloud[i].z() < max_ground){
       near_floor_pnts.push_back(point_cloud[i]);
     }
   }
