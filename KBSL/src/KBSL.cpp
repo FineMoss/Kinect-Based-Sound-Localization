@@ -34,7 +34,14 @@ sensor_msgs::PointCloud full_point_cloud;
 sensor_msgs::PointCloud ground_point_cloud;
 sensor_msgs::PointCloud obstacles_point_cloud;
 
+float y_min = 100.0;
+float y_max = -100.0;
+float z_min = 100.0;
+float z_max = -100.0;
+
+
 //DownSampled PointCloud ----- Convert These to Sound
+int numXYPoints = 5;
 sensor_msgs::PointCloud ground_obs_pnts;
 sensor_msgs::PointCloud obs_pnts;
 
@@ -91,8 +98,18 @@ void FindInliers(const Vector3f& n, const Vector3f& P0, float epsilon,
 void FindInliersFloorObs(const Vector3f& n, const Vector3f& P0, float epsilon,
     const vector<Vector3f>& point_cloud, vector<Vector3f>* inliers, vector<Vector3f>* outliers) {
 
+  y_min = 100.0;
+  y_max = -100.0;
+  z_min = 100.0;
+  z_max = -100.0;
+
   inliers->clear();
   for (size_t i = 0; i < point_cloud.size(); ++i) {
+
+    if(point_cloud[i].y() < y_min) y_min = point_cloud[i].y();
+    if(point_cloud[i].y() > y_max) y_max = point_cloud[i].y();
+    if(point_cloud[i].z() < z_min) z_min = point_cloud[i].z();
+    if(point_cloud[i].z() > z_max) z_max = point_cloud[i].z();
 
     if (fabs((point_cloud[i] - P0).dot(n)) < epsilon) {
       inliers->push_back(point_cloud[i]);
@@ -270,7 +287,47 @@ void updateClouds(){
   }
 
   //TEST WHAT THE POINT CLOUD CONTAIN
-  filtered_point_cloud_publisher_.publish(ground_point_cloud);
+  // filtered_point_cloud_publisher_.publish(ground_point_cloud);
+}
+
+void makeSoundClouds(){
+  sensor_msgs::PointCloud temp_obs_cloud;
+  temp_obs_cloud.header = obstacles_point_cloud.header;
+
+  temp_obs_cloud.points.resize(numXYPoints*numXYPoints);
+
+  float y_dist = y_max - y_min;
+  float z_dist = z_max - z_min;
+
+  float y_unit = y_dist/(float)numXYPoints;
+  float z_unit = z_dist/(float)numXYPoints;
+
+  float abs_y_min = y_min;
+  float abs_z_min = z_min;
+  if(abs_y_min < 0) abs_y_min*=-1.0;
+  if(abs_z_min < 0) abs_z_min*=-1.0;
+
+
+  for(int i = 0; i<numXYPoints; i++){
+    for(int j = 0; j<numXYPoints; j++){
+      Point32 new_point;
+      new_point.x = 100;
+      new_point.y = y_min + (y_unit*j + .5*y_unit);
+      new_point.z = z_min + (z_unit*i + .5*z_unit);
+      temp_obs_cloud.points[i*numXYPoints + j] = new_point;
+    }
+  }
+
+  for (size_t i = 0; i < obstacles_point_cloud.points.size(); ++i) {
+    Point32 curr = obstacles_point_cloud.points[i];
+    int y_pos = (int)((curr.y + abs_y_min)/y_unit);
+    int z_pos = (int)((curr.z + abs_z_min)/z_unit);
+    if(curr.x < temp_obs_cloud.points[z_pos*numXYPoints + y_pos].x) temp_obs_cloud.points[z_pos*numXYPoints + y_pos].x = curr.x;
+  }
+
+  obs_pnts = temp_obs_cloud;
+  //TEST WHAT THE POINT CLOUD CONTAIN
+  filtered_point_cloud_publisher_.publish(obs_pnts);
 }
 
 
@@ -289,6 +346,8 @@ int main(int argc, char **argv) {
 
       //Call Function To update floor and obstacle point clouds
       updateClouds();
+
+      makeSoundClouds();
 
       ros::spinOnce();
       loop.sleep();

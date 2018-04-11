@@ -5,7 +5,6 @@ Panels:
     Property Tree Widget:
       Expanded:
         - /Global Options1
-        - /Filtered PointCloud1
       Splitter Ratio: 0.533333361
     Tree Height: 443
   - Class: rviz/Selection
@@ -26,7 +25,7 @@ Panels:
     Experimental: false
     Name: Time
     SyncMode: 0
-    SyncSource: ""
+    SyncSource: Filtered PointCloud
 Visualization Manager:
   Class: ""
   Displays:
@@ -49,12 +48,12 @@ Visualization Manager:
       Reference Frame: <Fixed Frame>
       Value: true
     - Class: rviz/Axes
-      Enabled: true
+      Enabled: false
       Length: 1
       Name: Axes
       Radius: 0.100000001
       Reference Frame: <Fixed Frame>
-      Value: true
+      Value: false
     - Class: rviz/Image
       Enabled: false
       Image Topic: /COMPSCI403/DepthImage
@@ -79,7 +78,7 @@ Visualization Manager:
       Color: 255; 255; 255
       Color Transformer: Intensity
       Decay Time: 0
-      Enabled: false
+      Enabled: true
       Invert Rainbow: false
       Max Color: 255; 255; 255
       Max Intensity: 4096
@@ -96,8 +95,8 @@ Visualization Manager:
       Unreliable: false
       Use Fixed Frame: true
       Use rainbow: true
-      Value: false
-    - Alpha: 0.0149999997
+      Value: true
+    - Alpha: 0.899999976
       Autocompute Intensity Bounds: true
       Autocompute Value Bounds:
         Max Value: 10
@@ -120,7 +119,7 @@ Visualization Manager:
       Queue Size: 10
       Selectable: true
       Size (Pixels): 3
-      Size (m): 0.100000001
+      Size (m): 0.0199999996
       Style: Flat Squares
       Topic: /COMPSCI403/FilteredPointCloud
       Unreliable: false
@@ -167,10 +166,10 @@ Visualization Manager:
       Invert Z Axis: false
       Name: Current View
       Near Clip Distance: 0.00999999978
-      Pitch: 0.714178085
+      Pitch: 0.0941783637
       Target Frame: <Fixed Frame>
       Value: Orbit (rviz)
-      Yaw: 3.50396609
+      Yaw: 3.02898145
     Saved: ~
 Window Geometry:
   Depth Image:
