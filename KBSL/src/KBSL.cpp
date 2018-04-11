@@ -23,9 +23,10 @@ using Eigen::Vector3f;
 using geometry_msgs::Point32;
 using namespace std;
 
+#define PI 3.14159265
+
 Vector3f floor_norm(1.0,0,0);
 float norm_tol = 1.0;
-
 float max_ground = 3.0;
 
 sensor_msgs::PointCloud full_point_cloud;
@@ -193,23 +194,43 @@ void RANSAC_MOD(const vector<Vector3f>& point_cloud, Vector3f* n_ptr,
 void PointCloudCallback(const sensor_msgs::PointCloud& point_cloud_msg) {
   //TODO perform rotation
   //Perform transformation
-    // const Vector3f P(req.P.x, req.P.y, req.P.z);
+  double x_rot = 45.0;
 
-    // Matrix3f R;
-    // for (int row = 0; row < 3; ++row) {
-    //   for (int col = 0; col < 3; ++col) {
-    //     R(row, col) = req.R[col * 3 + row];
-    //   }
-    // }
-    // const Vector3f T(req.T.x, req.T.y, req.T.z);
+  sensor_msgs::PointCloud trans_pnt_cloud;
+  trans_pnt_cloud.header = point_cloud_msg.header;
 
-    // // Compute P_prime from P, R, T.
-    // Vector3f P_prime = R * P + T;
+  Matrix3f R;
+  //Y-Rotation
+  // R(0, 0) = cos(x_rot*PI/180.0);
+  // R(0, 2) = sin(x_rot*PI/180.0);
+  // R(1, 1) = 1;
+  // R(2, 0) = -1.0*sin(x_rot*PI/180.0);
+  // R(2, 2) = cos(x_rot*PI/180.0);
+  R(0, 0) = 1.0;
+  R(1, 1) = 1.0;
+  R(2, 2) = 1.0;
 
-    // // Convert to ROS type to return the result.
-    // //   res.P_prime = ConvertVectorToPoint(P_prime);
 
-  full_point_cloud = point_cloud_msg;
+  // const Vector3f T(0.0, 0.0, 0.5);
+  const Vector3f T(0.0, 0.0, 0.0);
+
+  for(int i = 0; i<(int)point_cloud_msg.points.size(); i++){
+    Vector3f P(point_cloud_msg.points[i].x, point_cloud_msg.points[i].y, point_cloud_msg.points[i].z);
+    // Compute P_prime from P, R, T.
+    Vector3f P_prime = R * P + T;
+
+    Point32 new_point;
+    new_point.x = P_prime.x();
+    new_point.y = P_prime.y();
+    new_point.z = P_prime.z();
+
+    trans_pnt_cloud.points.push_back(new_point);
+  }
+
+  // Convert to ROS type to return the result.
+  //   res.P_prime = ConvertVectorToPoint(P_prime);
+
+  full_point_cloud = trans_pnt_cloud;
 
 }
 
@@ -248,7 +269,7 @@ void updateClouds(){
   }
 
   //TEST WHAT THE POINT CLOUD CONTAIN
-  // filtered_point_cloud_publisher_.publish(obstacles_point_cloud);
+  filtered_point_cloud_publisher_.publish(ground_point_cloud);
 }
 
 
