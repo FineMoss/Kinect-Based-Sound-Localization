@@ -55,9 +55,6 @@ float z_max = -1*max_sensor_dist;
 //DownSampled PointCloud ----- Convert These to Sound
 vector<float> angles;
 vector<float> angle_distances;
-// int numXYPoints = 5;
-// sensor_msgs::PointCloud ground_obs_pnts;
-// sensor_msgs::PointCloud obs_pnts;
 
 // Publisher for 3D plane filtered point clouds.
 ros::Publisher filtered_point_cloud_publisher_;
@@ -275,9 +272,6 @@ void PointCloudCallback(const sensor_msgs::PointCloud& point_cloud_msg) {
     trans_pnt_cloud.points.push_back(new_point);
   }
 
-  // Convert to ROS type to return the result.
-  //   res.P_prime = ConvertVectorToPoint(P_prime);
-
   full_point_cloud = trans_pnt_cloud;
 
 }
@@ -386,48 +380,6 @@ void obsAvoid(){
   // printf("5: %f\n\n", test);
 }
 
-// void makeSoundClouds(){
-//   //Function to take the objects  point cloud and downsample obstacles
-//   sensor_msgs::PointCloud temp_obs_cloud;
-//   temp_obs_cloud.header = obstacles_point_cloud.header;
-
-//   temp_obs_cloud.points.resize(numXYPoints*numXYPoints);
-
-//   float y_dist = y_max - y_min;
-//   float z_dist = z_max - z_min;
-
-//   float y_unit = y_dist/(float)numXYPoints;
-//   float z_unit = z_dist/(float)numXYPoints;
-
-//   float abs_y_min = y_min;
-//   float abs_z_min = z_min;
-//   if(abs_y_min < 0) abs_y_min*=-1.0;
-//   if(abs_z_min < 0) abs_z_min*=-1.0;
-
-
-//   for(int i = 0; i<numXYPoints; i++){
-//     for(int j = 0; j<numXYPoints; j++){
-//       Point32 new_point;
-//       new_point.x = max_sensor_dist;
-//       new_point.y = y_min + (y_unit*j + .5*y_unit);
-//       new_point.z = z_min + (z_unit*i + .5*z_unit);
-//       temp_obs_cloud.points[i*numXYPoints + j] = new_point;
-//     }
-//   }
-
-//   for (size_t i = 0; i < obstacles_point_cloud.points.size(); ++i) {
-//     Point32 curr = obstacles_point_cloud.points[i];
-//     int y_pos = (int)((curr.y + abs_y_min)/y_unit);
-//     int z_pos = (int)((curr.z + abs_z_min)/z_unit);
-//     if(curr.x < temp_obs_cloud.points[z_pos*numXYPoints + y_pos].x) temp_obs_cloud.points[z_pos*numXYPoints + y_pos].x = curr.x;
-//   }
-
-//   obs_pnts = temp_obs_cloud;
-//   //TEST WHAT THE POINT CLOUD CONTAIN
-//   filtered_point_cloud_publisher_.publish(obs_pnts);
-// }
-
-
 int main(int argc, char **argv) {
   ros::init(argc, argv, "KBSL");
   ros::NodeHandle n;
@@ -444,8 +396,6 @@ int main(int argc, char **argv) {
       //Call Function To update floor and obstacle point clouds
       updateClouds();
       obsAvoid();
-
-      // makeSoundClouds();
 
       ros::spinOnce();
       loop.sleep();
