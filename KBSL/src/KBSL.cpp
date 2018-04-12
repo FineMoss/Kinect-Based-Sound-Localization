@@ -28,7 +28,7 @@ using namespace std;
 //USER PARAMETERS
 double kinect_angle = 45.0;
 double kinect_height = 0.5;
-double user_width = 0.03;
+double user_width = 0.1;
 double user_height = 0.8;
 
 float adjusted_height = kinect_height;
@@ -338,13 +338,9 @@ void obsAvoid(){
   min_ang *= -1.0;
   float max_ang = acos(originRight.dot(originStraight) / (originRight.norm() * originStraight.norm()));
 
-  // printf("1: %f\n2: %f\n\n", min_ang, max_ang);
-
   float ang_diff = max_ang - min_ang;
   if(ang_diff < 0) ang_diff *= -1;
   float ang_unit = ang_diff/(float)numPaths;
-
-  // printf("1: %f\n2: %f\n\n", ang_diff, ang_unit);
 
   Vector3f near = Vector3f(0, origin.y() - (user_width/(float)2), origin.z() - kinect_height);
   Vector3f far = Vector3f(0, origin.y() + (user_width/(float)2), origin.z() + (user_height - kinect_height));
@@ -355,62 +351,22 @@ void obsAvoid(){
   for(int i = 0; i<numPaths; i++){
     ang_vec.push_back(min_ang + ((float)i*ang_unit) + (0.5* ang_unit));
     dist_vec.push_back(max_sensor_dist);
-    // printf("1: %f\n2: %f\n\n", ang_vec[i], dist_vec[i]);
   }
 
-  //Z-Rotation Matrix to rotate to initial position
   float rot_init = min_ang - (ang_unit*0.5);
-  // printf("init1: %f\n\n", rot_init);
-  // rot_init = 2.0 + rot_init;
-  // printf("init2: %f\n\n", rot_init);
-
-  // printf("cos: %f\n\n", cos(rot_init));
-
-  // Matrix3f R0;
-  // R0(2, 2) = 1;
-  // R0(0, 0) = cos(rot_init);
-  // R0(1, 1) = cos(rot_init);
-  // R0(0, 1) = -1.0*sin(rot_init);
-  // R0(1, 0) = sin(rot_init);
-  // R0(0,2) = 0;
-  // R0(1,2) = 0;
-  // R0(2,0) = 0;
-  // R0(2,1) = 0;
-
-  //Z-Rotation Matrix to rotate an angle unit
-  // Matrix3f R;
-  // R(2, 2) = 1;
-  // R(0, 0) = cos(ang_unit);
-  // R(1, 1) = cos(ang_unit);
-  // R(0, 1) = -1.0*sin(ang_unit);
-  // R(1, 0) = sin(ang_unit);
-  // R(0,2) = 0;
-  // R(1,2) = 0;
-  // R(2,0) = 0;
-  // R(2,1) = 0;
 
   sensor_msgs::PointCloud temp_cloud = obstacles_point_cloud;
 
   for (int i = 0; i<(int)temp_cloud.points.size(); i++){
     Vector3f currPnt = ConvertPointToVector(temp_cloud.points[i]);
-    // printf(" Before - 1: %f  2: %f  3: %f\n\n", currPnt.x(), currPnt.y(), currPnt.z());
     float x = currPnt.x() * cos(rot_init) + currPnt.y() * sin(rot_init);
     float y = -1*currPnt.x() * sin(rot_init) + currPnt.y() * cos(rot_init);
     currPnt = Vector3f(x, y, currPnt.z()); //R0 * currPnt;
 
-    // printf(" Init Rot - 1: %f  2: %f  3: %f\n\n", currPnt.x(), currPnt.y(), currPnt.z());
-
     for(int j = 0; j<(int)ang_vec.size(); j++){
-      //Places current points within the angle frame of the rectangle
-      // currPnt = R * currPnt;
-
       x = currPnt.x() * cos(ang_unit) + currPnt.y() * sin(ang_unit);
       y = -1*currPnt.x() * sin(ang_unit) + currPnt.y() * cos(ang_unit);
       currPnt = Vector3f(x, y, currPnt.z()); //R0 * currPnt;
-
-      // printf("ang_unit: %f\n\n", ang_unit);
-
-      // printf(" During %i - 1: %f  2: %f  3: %f\n\n", i, currPnt.x(), currPnt.y(), currPnt.z());
       //check if x,y parameters are within rectangle
       if( currPnt.x() < dist_vec[j] and currPnt.y() > near.y() and currPnt.y() < far.y() and currPnt.z() > near.z() and currPnt.z() < far.z()){
         dist_vec[j] = currPnt.x();
@@ -418,30 +374,16 @@ void obsAvoid(){
     }
 
   }
-
-  float test = dist_vec[0];
-  printf("1: %f\n", test);
-  test = dist_vec[1];
-  printf("2: %f\n", test);
-  test = dist_vec[2];
-  printf("3: %f\n", test);
-  test = dist_vec[3];
-  printf("4: %f\n", test);
-  test = dist_vec[4];
-  printf("5: %f\n\n", test);
-
-  // angles = ang_vec;
-  // angle_distances = dist_vec;
-
-  // float test = 0;
-
-  // for(int i = 0; i<5; i++){
-  //   // test = dist_vec[i];
-  //   printf("%i: %f", 3, dist_vec[2]);
-  // // }
-
-  // printf("1: %f\n2: %f\n3: %f\n4: %f\n5: %f\n\n", angles[0], angles[1], angles[2], angles[3], angles[4]);
-
+  // float test = dist_vec[0];
+  // printf("1: %f\n", test);
+  // test = dist_vec[1];
+  // printf("2: %f\n", test);
+  // test = dist_vec[2];
+  // printf("3: %f\n", test);
+  // test = dist_vec[3];
+  // printf("4: %f\n", test);
+  // test = dist_vec[4];
+  // printf("5: %f\n\n", test);
 }
 
 // void makeSoundClouds(){
