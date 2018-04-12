@@ -25,6 +25,16 @@ using namespace std;
 
 #define PI 3.14159265
 
+//USER PARAMETERS
+double kinect_angle = 45.0;
+double kinect_height = 0.5;
+double user_width = 0.03;
+double user_height = 0.8;
+
+float adjusted_height = kinect_height;
+
+float max_sensor_dist = 100;
+
 Vector3f floor_norm(1.0,0,0);
 float norm_tol = 1.0;
 float max_ground = 3.0;
@@ -34,16 +44,20 @@ sensor_msgs::PointCloud full_point_cloud;
 sensor_msgs::PointCloud ground_point_cloud;
 sensor_msgs::PointCloud obstacles_point_cloud;
 
-float y_min = 100.0;
-float y_max = -100.0;
-float z_min = 100.0;
-float z_max = -100.0;
+float x_min = max_sensor_dist;
+float x_max = -1*max_sensor_dist;
+float y_min = max_sensor_dist;
+float y_max = -1*max_sensor_dist;
+float z_min = max_sensor_dist;
+float z_max = -1*max_sensor_dist;
 
 
 //DownSampled PointCloud ----- Convert These to Sound
-int numXYPoints = 5;
-sensor_msgs::PointCloud ground_obs_pnts;
-sensor_msgs::PointCloud obs_pnts;
+vector<float> angles;
+vector<float> angle_distances;
+// int numXYPoints = 5;
+// sensor_msgs::PointCloud ground_obs_pnts;
+// sensor_msgs::PointCloud obs_pnts;
 
 // Publisher for 3D plane filtered point clouds.
 ros::Publisher filtered_point_cloud_publisher_;
@@ -51,8 +65,18 @@ ros::Publisher filtered_point_cloud_publisher_;
 // RANSAC parameters.
 static const int kIterations = 50;
 static const float kMinInlierFraction = 0.7;
-static const float kEpsilon = 0.01;
+static const float kEpsilon = 0.03;
 
+struct Rect{
+  Rect(float a, Vector3f near, Vector3f far){
+    ang = a;
+    nearPnt = near;
+    farPnt = far;
+  }
+  float ang;
+  Vector3f nearPnt;
+  Vector3f farPnt;
+};
 
 bool npInRange(Vector3f n, Vector3f p){
   //TODO
@@ -98,18 +122,25 @@ void FindInliers(const Vector3f& n, const Vector3f& P0, float epsilon,
 void FindInliersFloorObs(const Vector3f& n, const Vector3f& P0, float epsilon,
     const vector<Vector3f>& point_cloud, vector<Vector3f>* inliers, vector<Vector3f>* outliers) {
 
-  y_min = 100.0;
-  y_max = -100.0;
-  z_min = 100.0;
-  z_max = -100.0;
+  x_min = max_sensor_dist;
+  x_max = -1* max_sensor_dist;
+  y_min = max_sensor_dist;
+  y_max = -1* max_sensor_dist;
+  z_min = max_sensor_dist;
+  z_max = -1*max_sensor_dist;
 
   inliers->clear();
   for (size_t i = 0; i < point_cloud.size(); ++i) {
 
+    if(point_cloud[i].x() < x_min) x_min = point_cloud[i].x();
+    if(point_cloud[i].x() > x_max) x_max = point_cloud[i].x();
     if(point_cloud[i].y() < y_min) y_min = point_cloud[i].y();
     if(point_cloud[i].y() > y_max) y_max = point_cloud[i].y();
     if(point_cloud[i].z() < z_min) z_min = point_cloud[i].z();
     if(point_cloud[i].z() > z_max) z_max = point_cloud[i].z();
+
+    if(y_min < 0) adjusted_height = -1*y_min;
+    else adjusted_height = y_min;
 
     if (fabs((point_cloud[i] - P0).dot(n)) < epsilon) {
       inliers->push_back(point_cloud[i]);
@@ -212,21 +243,20 @@ void RANSAC_MOD(const vector<Vector3f>& point_cloud, Vector3f* n_ptr,
 void PointCloudCallback(const sensor_msgs::PointCloud& point_cloud_msg) {
   //TODO perform rotation
   //Perform transformation
-  double x_rot = 45.0;
 
   sensor_msgs::PointCloud trans_pnt_cloud;
   trans_pnt_cloud.header = point_cloud_msg.header;
 
   Matrix3f R;
   //Y-Rotation
-  // R(0, 0) = cos(x_rot*PI/180.0);
-  // R(0, 2) = sin(x_rot*PI/180.0);
-  // R(1, 1) = 1;
-  // R(2, 0) = -1.0*sin(x_rot*PI/180.0);
-  // R(2, 2) = cos(x_rot*PI/180.0);
-  R(0, 0) = 1.0;
-  R(1, 1) = 1.0;
-  R(2, 2) = 1.0;
+  R(0, 0) = cos(kinect_angle*PI/180.0);
+  R(0, 2) = sin(kinect_angle*PI/180.0);
+  R(1, 1) = 1;
+  R(2, 0) = -1.0*sin(kinect_angle*PI/180.0);
+  R(2, 2) = cos(kinect_angle*PI/180.0);
+  // R(0, 0) = 1.0;
+  // R(1, 1) = 1.0;
+  // R(2, 2) = 1.0;
 
 
   // const Vector3f T(0.0, 0.0, 0.5);
@@ -253,6 +283,7 @@ void PointCloudCallback(const sensor_msgs::PointCloud& point_cloud_msg) {
 }
 
 void updateClouds(){
+  
   ground_point_cloud.header = full_point_cloud.header;
   obstacles_point_cloud.header = full_point_cloud.header;
 
@@ -287,48 +318,172 @@ void updateClouds(){
   }
 
   //TEST WHAT THE POINT CLOUD CONTAIN
-  // filtered_point_cloud_publisher_.publish(ground_point_cloud);
+  filtered_point_cloud_publisher_.publish(obstacles_point_cloud);
+
 }
 
-void makeSoundClouds(){
-  sensor_msgs::PointCloud temp_obs_cloud;
-  temp_obs_cloud.header = obstacles_point_cloud.header;
-
-  temp_obs_cloud.points.resize(numXYPoints*numXYPoints);
-
-  float y_dist = y_max - y_min;
-  float z_dist = z_max - z_min;
-
-  float y_unit = y_dist/(float)numXYPoints;
-  float z_unit = z_dist/(float)numXYPoints;
-
-  float abs_y_min = y_min;
-  float abs_z_min = z_min;
-  if(abs_y_min < 0) abs_y_min*=-1.0;
-  if(abs_z_min < 0) abs_z_min*=-1.0;
 
 
-  for(int i = 0; i<numXYPoints; i++){
-    for(int j = 0; j<numXYPoints; j++){
-      Point32 new_point;
-      new_point.x = 100;
-      new_point.y = y_min + (y_unit*j + .5*y_unit);
-      new_point.z = z_min + (z_unit*i + .5*z_unit);
-      temp_obs_cloud.points[i*numXYPoints + j] = new_point;
+void obsAvoid(){
+
+  Vector3f origin = Vector3f(0,0,0);
+
+  int numPaths = 5;
+
+  Vector3f originStraight = Vector3f(1,0,0);
+  Vector3f originLeft = Vector3f(x_max,y_min,0)/Vector3f(x_max,y_min,0).norm();
+  Vector3f originRight = Vector3f(x_max,y_max,0)/Vector3f(x_max,y_max,0).norm();
+
+  float min_ang = acos(originLeft.dot(originStraight) / (originLeft.norm() * originStraight.norm()));
+  min_ang *= -1.0;
+  float max_ang = acos(originRight.dot(originStraight) / (originRight.norm() * originStraight.norm()));
+
+  // printf("1: %f\n2: %f\n\n", min_ang, max_ang);
+
+  float ang_diff = max_ang - min_ang;
+  if(ang_diff < 0) ang_diff *= -1;
+  float ang_unit = ang_diff/(float)numPaths;
+
+  // printf("1: %f\n2: %f\n\n", ang_diff, ang_unit);
+
+  Vector3f near = Vector3f(0, origin.y() - (user_width/(float)2), origin.z() - kinect_height);
+  Vector3f far = Vector3f(0, origin.y() + (user_width/(float)2), origin.z() + (user_height - kinect_height));
+
+  vector<float> ang_vec;
+  vector<float> dist_vec;
+
+  for(int i = 0; i<numPaths; i++){
+    ang_vec.push_back(min_ang + ((float)i*ang_unit) + (0.5* ang_unit));
+    dist_vec.push_back(max_sensor_dist);
+    // printf("1: %f\n2: %f\n\n", ang_vec[i], dist_vec[i]);
+  }
+
+  //Z-Rotation Matrix to rotate to initial position
+  float rot_init = min_ang - (ang_unit*0.5);
+  // printf("init1: %f\n\n", rot_init);
+  // rot_init = 2.0 + rot_init;
+  // printf("init2: %f\n\n", rot_init);
+
+  // printf("cos: %f\n\n", cos(rot_init));
+
+  // Matrix3f R0;
+  // R0(2, 2) = 1;
+  // R0(0, 0) = cos(rot_init);
+  // R0(1, 1) = cos(rot_init);
+  // R0(0, 1) = -1.0*sin(rot_init);
+  // R0(1, 0) = sin(rot_init);
+  // R0(0,2) = 0;
+  // R0(1,2) = 0;
+  // R0(2,0) = 0;
+  // R0(2,1) = 0;
+
+  //Z-Rotation Matrix to rotate an angle unit
+  // Matrix3f R;
+  // R(2, 2) = 1;
+  // R(0, 0) = cos(ang_unit);
+  // R(1, 1) = cos(ang_unit);
+  // R(0, 1) = -1.0*sin(ang_unit);
+  // R(1, 0) = sin(ang_unit);
+  // R(0,2) = 0;
+  // R(1,2) = 0;
+  // R(2,0) = 0;
+  // R(2,1) = 0;
+
+  sensor_msgs::PointCloud temp_cloud = obstacles_point_cloud;
+
+  for (int i = 0; i<(int)temp_cloud.points.size(); i++){
+    Vector3f currPnt = ConvertPointToVector(temp_cloud.points[i]);
+    // printf(" Before - 1: %f  2: %f  3: %f\n\n", currPnt.x(), currPnt.y(), currPnt.z());
+    float x = currPnt.x() * cos(rot_init) + currPnt.y() * sin(rot_init);
+    float y = -1*currPnt.x() * sin(rot_init) + currPnt.y() * cos(rot_init);
+    currPnt = Vector3f(x, y, currPnt.z()); //R0 * currPnt;
+
+    // printf(" Init Rot - 1: %f  2: %f  3: %f\n\n", currPnt.x(), currPnt.y(), currPnt.z());
+
+    for(int j = 0; j<(int)ang_vec.size(); j++){
+      //Places current points within the angle frame of the rectangle
+      // currPnt = R * currPnt;
+
+      x = currPnt.x() * cos(ang_unit) + currPnt.y() * sin(ang_unit);
+      y = -1*currPnt.x() * sin(ang_unit) + currPnt.y() * cos(ang_unit);
+      currPnt = Vector3f(x, y, currPnt.z()); //R0 * currPnt;
+
+      // printf("ang_unit: %f\n\n", ang_unit);
+
+      // printf(" During %i - 1: %f  2: %f  3: %f\n\n", i, currPnt.x(), currPnt.y(), currPnt.z());
+      //check if x,y parameters are within rectangle
+      if( currPnt.x() < dist_vec[j] and currPnt.y() > near.y() and currPnt.y() < far.y() and currPnt.z() > near.z() and currPnt.z() < far.z()){
+        dist_vec[j] = currPnt.x();
+      }
     }
+
   }
 
-  for (size_t i = 0; i < obstacles_point_cloud.points.size(); ++i) {
-    Point32 curr = obstacles_point_cloud.points[i];
-    int y_pos = (int)((curr.y + abs_y_min)/y_unit);
-    int z_pos = (int)((curr.z + abs_z_min)/z_unit);
-    if(curr.x < temp_obs_cloud.points[z_pos*numXYPoints + y_pos].x) temp_obs_cloud.points[z_pos*numXYPoints + y_pos].x = curr.x;
-  }
+  float test = dist_vec[0];
+  printf("1: %f\n", test);
+  test = dist_vec[1];
+  printf("2: %f\n", test);
+  test = dist_vec[2];
+  printf("3: %f\n", test);
+  test = dist_vec[3];
+  printf("4: %f\n", test);
+  test = dist_vec[4];
+  printf("5: %f\n\n", test);
 
-  obs_pnts = temp_obs_cloud;
-  //TEST WHAT THE POINT CLOUD CONTAIN
-  filtered_point_cloud_publisher_.publish(obs_pnts);
+  // angles = ang_vec;
+  // angle_distances = dist_vec;
+
+  // float test = 0;
+
+  // for(int i = 0; i<5; i++){
+  //   // test = dist_vec[i];
+  //   printf("%i: %f", 3, dist_vec[2]);
+  // // }
+
+  // printf("1: %f\n2: %f\n3: %f\n4: %f\n5: %f\n\n", angles[0], angles[1], angles[2], angles[3], angles[4]);
+
 }
+
+// void makeSoundClouds(){
+//   //Function to take the objects  point cloud and downsample obstacles
+//   sensor_msgs::PointCloud temp_obs_cloud;
+//   temp_obs_cloud.header = obstacles_point_cloud.header;
+
+//   temp_obs_cloud.points.resize(numXYPoints*numXYPoints);
+
+//   float y_dist = y_max - y_min;
+//   float z_dist = z_max - z_min;
+
+//   float y_unit = y_dist/(float)numXYPoints;
+//   float z_unit = z_dist/(float)numXYPoints;
+
+//   float abs_y_min = y_min;
+//   float abs_z_min = z_min;
+//   if(abs_y_min < 0) abs_y_min*=-1.0;
+//   if(abs_z_min < 0) abs_z_min*=-1.0;
+
+
+//   for(int i = 0; i<numXYPoints; i++){
+//     for(int j = 0; j<numXYPoints; j++){
+//       Point32 new_point;
+//       new_point.x = max_sensor_dist;
+//       new_point.y = y_min + (y_unit*j + .5*y_unit);
+//       new_point.z = z_min + (z_unit*i + .5*z_unit);
+//       temp_obs_cloud.points[i*numXYPoints + j] = new_point;
+//     }
+//   }
+
+//   for (size_t i = 0; i < obstacles_point_cloud.points.size(); ++i) {
+//     Point32 curr = obstacles_point_cloud.points[i];
+//     int y_pos = (int)((curr.y + abs_y_min)/y_unit);
+//     int z_pos = (int)((curr.z + abs_z_min)/z_unit);
+//     if(curr.x < temp_obs_cloud.points[z_pos*numXYPoints + y_pos].x) temp_obs_cloud.points[z_pos*numXYPoints + y_pos].x = curr.x;
+//   }
+
+//   obs_pnts = temp_obs_cloud;
+//   //TEST WHAT THE POINT CLOUD CONTAIN
+//   filtered_point_cloud_publisher_.publish(obs_pnts);
+// }
 
 
 int main(int argc, char **argv) {
@@ -341,13 +496,14 @@ int main(int argc, char **argv) {
     n.subscribe("/COMPSCI403/PointCloud", 1, PointCloudCallback);
 
 
-    ros::Rate loop(3);
+    ros::Rate loop(2);
     while (ros::ok()) {
 
       //Call Function To update floor and obstacle point clouds
       updateClouds();
+      obsAvoid();
 
-      makeSoundClouds();
+      // makeSoundClouds();
 
       ros::spinOnce();
       loop.sleep();
