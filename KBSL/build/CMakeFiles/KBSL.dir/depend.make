@@ -66,6 +66,10 @@ CMakeFiles/KBSL.dir/src/KBSL.cpp.o: /opt/ros/kinetic/include/ros/wall_timer_opti
 CMakeFiles/KBSL.dir/src/KBSL.cpp.o: /opt/ros/kinetic/include/rosconsole/macros_generated.h
 CMakeFiles/KBSL.dir/src/KBSL.cpp.o: /opt/ros/kinetic/include/sensor_msgs/ChannelFloat32.h
 CMakeFiles/KBSL.dir/src/KBSL.cpp.o: /opt/ros/kinetic/include/sensor_msgs/PointCloud.h
+CMakeFiles/KBSL.dir/src/KBSL.cpp.o: /opt/ros/kinetic/include/sensor_msgs/PointCloud2.h
+CMakeFiles/KBSL.dir/src/KBSL.cpp.o: /opt/ros/kinetic/include/sensor_msgs/PointField.h
+CMakeFiles/KBSL.dir/src/KBSL.cpp.o: /opt/ros/kinetic/include/sensor_msgs/point_cloud_conversion.h
+CMakeFiles/KBSL.dir/src/KBSL.cpp.o: /opt/ros/kinetic/include/sensor_msgs/point_field_conversion.h
 CMakeFiles/KBSL.dir/src/KBSL.cpp.o: /opt/ros/kinetic/include/std_msgs/Header.h
 CMakeFiles/KBSL.dir/src/KBSL.cpp.o: /opt/ros/kinetic/include/std_msgs/String.h
 CMakeFiles/KBSL.dir/src/KBSL.cpp.o: /opt/ros/kinetic/include/xmlrpcpp/XmlRpcDecl.h

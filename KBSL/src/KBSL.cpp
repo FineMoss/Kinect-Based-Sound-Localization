@@ -332,7 +332,7 @@ void makeSoundClouds(){
 
   obs_pnts = temp_obs_cloud;
   //TEST WHAT THE POINT CLOUD CONTAIN
-  filtered_point_cloud_publisher_.publish(obs_pnts);
+  filtered_point_cloud_publisher_.publish(full_point_cloud);
 }
 
 
