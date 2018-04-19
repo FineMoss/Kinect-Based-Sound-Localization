@@ -10,7 +10,9 @@
 #include <eigen3/Eigen/Dense>
 #include <eigen3/Eigen/Eigenvalues>
 #include <geometry_msgs/Point32.h>
+#include <sensor_msgs/point_cloud_conversion.h>
 #include <sensor_msgs/PointCloud.h>
+#include <sensor_msgs/PointCloud2.h>
 
 #include "KBSL/TransformPointSrv.h"
 #include "KBSL/FitMinimalPlaneSrv.h"
@@ -209,10 +211,13 @@ void RANSAC_MOD(const vector<Vector3f>& point_cloud, Vector3f* n_ptr,
   FitBestPlane(inliers, n_ptr, P0_ptr);
 }
 
-void PointCloudCallback(const sensor_msgs::PointCloud& point_cloud_msg) {
+void PointCloudCallback(const sensor_msgs::PointCloud2& point_cloud_2_msg) {
   //TODO perform rotation
   //Perform transformation
   double x_rot = 45.0;
+  sensor_msgs::PointCloud point_cloud_msg;
+
+  sensor_msgs::convertPointCloud2ToPointCloud(point_cloud_2_msg, point_cloud_msg);
 
   sensor_msgs::PointCloud trans_pnt_cloud;
   trans_pnt_cloud.header = point_cloud_msg.header;
