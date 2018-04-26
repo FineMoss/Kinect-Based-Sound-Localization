@@ -20,6 +20,12 @@
 #include "KBSL/FitBestPlaneSrv.h"
 #include "KBSL/PlaneParametersMsg.h"
 
+// #include <pcl_conversions/pcl_conversions.h>
+// #include <pcl/point_types.h>
+// #include <pcl/PCLPointCloud2.h>
+// #include <pcl/conversions.h>
+// #include <pcl_ros/transforms.h>
+
 using Eigen::Matrix3f;
 using Eigen::Vector3f;
 using geometry_msgs::Point32;
@@ -30,6 +36,9 @@ using namespace std;
 Vector3f floor_norm(1.0,0,0);
 float norm_tol = 1.0;
 float max_ground = 3.0;
+
+float kinect_rot = 20.0;
+float kinect_height = 1.3;
 
 sensor_msgs::PointCloud full_point_cloud;
 // Message for published filtered 3D point clouds.
@@ -49,6 +58,7 @@ sensor_msgs::PointCloud obs_pnts;
 
 // Publisher for 3D plane filtered point clouds.
 ros::Publisher filtered_point_cloud_publisher_;
+ros::Publisher filtered_point_cloud_publisher_2;
 
 // RANSAC parameters.
 static const int kIterations = 50;
@@ -214,28 +224,66 @@ void RANSAC_MOD(const vector<Vector3f>& point_cloud, Vector3f* n_ptr,
 void PointCloudCallback(const sensor_msgs::PointCloud2& point_cloud_2_msg) {
   //TODO perform rotation
   //Perform transformation
-  double x_rot = 45.0;
+  
+  double x_rot = 90.0 + kinect_rot;
+
+
+  // pcl::PCLPointCloud2 pcl_pc2;
+  // pcl_conversions::toPCL(point_cloud_2_msg,pcl_pc2);
+  // pcl::PointCloud<pcl::PointXYZ>::Ptr temp_cloud(new pcl::PointCloud<pcl::PointXYZ>);
+  // pcl::fromPCLPointCloud2(pcl_pc2,*temp_cloud);
+
   sensor_msgs::PointCloud point_cloud_msg;
 
-  sensor_msgs::convertPointCloud2ToPointCloud(point_cloud_2_msg, point_cloud_msg);
+  bool b = sensor_msgs::convertPointCloud2ToPointCloud(point_cloud_2_msg, point_cloud_msg);
+
+  if(not b) ROS_INFO("Error on PointCloud2 to PointCloud Conversion");
+
+  // ROS_INFO("%s" , point_cloud_2_msg.header.frame_id.c_str());
+
+  // point_cloud_msg.header = point_cloud_2_msg.header;
+
+  filtered_point_cloud_publisher_.publish(point_cloud_msg);
+
+  // ROS_INFO("ptc1: %i" , point_cloud_msg.points.size());
+  // ROS_INFO("ptc2: %i" , point_cloud_2_msg.points.size());
+
+  // point_cloud_msg.header.frame_id = "base_frame";
+
 
   sensor_msgs::PointCloud trans_pnt_cloud;
   trans_pnt_cloud.header = point_cloud_msg.header;
 
+
   Matrix3f R;
   //Y-Rotation
-  // R(0, 0) = cos(x_rot*PI/180.0);
-  // R(0, 2) = sin(x_rot*PI/180.0);
-  // R(1, 1) = 1;
-  // R(2, 0) = -1.0*sin(x_rot*PI/180.0);
-  // R(2, 2) = cos(x_rot*PI/180.0);
-  R(0, 0) = 1.0;
-  R(1, 1) = 1.0;
-  R(2, 2) = 1.0;
+    // R(0, 0) = cos(x_rot*PI/180.0);
+    // R(0, 1) = 0;
+    // R(0, 2) = -1*sin(x_rot*PI/180.0);
+    // R(1, 0) = 0;
+    // R(1, 1) = 1;
+    // R(1, 2) = 0;
+    // R(2, 0) = sin(x_rot*PI/180.0);
+    // R(2, 1) = 0;
+    // R(2, 2) = cos(x_rot*PI/180.0);
+
+    R(0, 0) = 1;//cos(x_rot*PI/180.0);
+    R(0, 1) = 0;
+    R(0, 2) = 0;//-1*sin(x_rot*PI/180.0);
+    R(1, 0) = 0;
+    R(1, 1) = cos(x_rot*PI/180.0);
+    R(1, 2) = sin(x_rot*PI/180.0);
+    R(2, 0) = 0;//sin(x_rot*PI/180.0);
+    R(2, 1) = -1*sin(x_rot*PI/180.0);
+    R(2, 2) = cos(x_rot*PI/180.0);
+
+  // R(0, 0) = 1.0;
+  // R(1, 1) = 1.0;
+  // R(2, 2) = 1.0;
 
 
   // const Vector3f T(0.0, 0.0, 0.5);
-  const Vector3f T(0.0, 0.0, 0.0);
+  const Vector3f T(0.0, 0.0, kinect_height);
 
   for(int i = 0; i<(int)point_cloud_msg.points.size(); i++){
     Vector3f P(point_cloud_msg.points[i].x, point_cloud_msg.points[i].y, point_cloud_msg.points[i].z);
@@ -250,10 +298,14 @@ void PointCloudCallback(const sensor_msgs::PointCloud2& point_cloud_2_msg) {
     trans_pnt_cloud.points.push_back(new_point);
   }
 
+  filtered_point_cloud_publisher_2.publish(trans_pnt_cloud);
+
   // Convert to ROS type to return the result.
   //   res.P_prime = ConvertVectorToPoint(P_prime);
 
   full_point_cloud = trans_pnt_cloud;
+
+  // filtered_point_cloud_publisher_.publish(full_point_cloud);
 
 }
 
@@ -332,7 +384,7 @@ void makeSoundClouds(){
 
   obs_pnts = temp_obs_cloud;
   //TEST WHAT THE POINT CLOUD CONTAIN
-  filtered_point_cloud_publisher_.publish(full_point_cloud);
+  //filtered_point_cloud_publisher_.publish(full_point_cloud);
 }
 
 
@@ -340,19 +392,20 @@ int main(int argc, char **argv) {
   ros::init(argc, argv, "KBSL");
   ros::NodeHandle n;
 
-  filtered_point_cloud_publisher_ = n.advertise<sensor_msgs::PointCloud>("/COMPSCI403/FilteredPointCloud", 1);
+  filtered_point_cloud_publisher_ = n.advertise<sensor_msgs::PointCloud>("/COMPSCI403/FilteredPointCloud", 3);
+  filtered_point_cloud_publisher_2 = n.advertise<sensor_msgs::PointCloud>("/COMPSCI403/PCloud", 3);
 
   ros::Subscriber point_cloud_subscriber =
-    n.subscribe("/COMPSCI403/PointCloud", 1, PointCloudCallback);
+    n.subscribe("/COMPSCI403/PointCloud", 3, PointCloudCallback);
 
 
     ros::Rate loop(3);
     while (ros::ok()) {
 
       //Call Function To update floor and obstacle point clouds
-      updateClouds();
+      // updateClouds();
 
-      makeSoundClouds();
+      // makeSoundClouds();
 
       ros::spinOnce();
       loop.sleep();
