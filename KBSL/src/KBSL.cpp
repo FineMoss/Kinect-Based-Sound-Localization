@@ -21,12 +21,6 @@
 #include "KBSL/PlaneParametersMsg.h"
 #include "AudioAPI.h"
 
-// #include <pcl_conversions/pcl_conversions.h>
-// #include <pcl/point_types.h>
-// #include <pcl/PCLPointCloud2.h>
-// #include <pcl/conversions.h>
-// #include <pcl_ros/transforms.h>
-
 using Eigen::Matrix3f;
 using Eigen::Vector3f;
 using geometry_msgs::Point32;
@@ -46,7 +40,7 @@ float max_sensor_dist = 100;
 
 Vector3f floor_norm(1.0,0,0);
 float norm_tol = 1.0;
-float max_ground = 3.0;
+float max_ground = -.9*kinect_height;
 
 
 sensor_msgs::PointCloud full_point_cloud;
@@ -71,9 +65,14 @@ ros::Publisher filtered_point_cloud_publisher_;
 ros::Publisher filtered_point_cloud_publisher_2;
 
 // RANSAC parameters.
-static const int kIterations = 50;
+static const int kIterations = 55;
+
 static const float kMinInlierFraction = 0.7;
-static const float kEpsilon = 0.03;
+static const float kEpsilonDetect = 0.03;
+static const float kEpsilonCollect = 0.08;
+
+// static const float kMinInlierFraction = 0.7;
+// static const float kEpsilon = 0.05;
 
 struct Rect{
   Rect(float a, Vector3f near, Vector3f far){
@@ -241,7 +240,7 @@ void RANSAC_MOD(const vector<Vector3f>& point_cloud, Vector3f* n_ptr,
     const Vector3f P2 = PickRandomPoint(near_floor_pnts);
     const Vector3f P3 = PickRandomPoint(near_floor_pnts);
     FitMinimalPlane(P1, P2, P3, &n, &P0);
-    FindInliers(n, P0, kEpsilon, near_floor_pnts, &inliers);
+    FindInliers(n, P0, kEpsilonDetect, near_floor_pnts, &inliers);
     inlier_fraction = static_cast<float>(inliers.size()) /
         static_cast<float>(near_floor_pnts.size());
   } while (i < kIterations && inlier_fraction < kMinInlierFraction && npInRange(*n_ptr, *P0_ptr));
@@ -255,29 +254,13 @@ void PointCloudCallback(const sensor_msgs::PointCloud2& point_cloud_2_msg) {
   
   double x_rot = 90.0 + kinect_angle;
 
-
-  // pcl::PCLPointCloud2 pcl_pc2;
-  // pcl_conversions::toPCL(point_cloud_2_msg,pcl_pc2);
-  // pcl::PointCloud<pcl::PointXYZ>::Ptr temp_cloud(new pcl::PointCloud<pcl::PointXYZ>);
-  // pcl::fromPCLPointCloud2(pcl_pc2,*temp_cloud);
-
   sensor_msgs::PointCloud point_cloud_msg;
 
   bool b = sensor_msgs::convertPointCloud2ToPointCloud(point_cloud_2_msg, point_cloud_msg);
 
   if(not b) ROS_INFO("Error on PointCloud2 to PointCloud Conversion");
 
-  // ROS_INFO("%s" , point_cloud_2_msg.header.frame_id.c_str());
-
-  // point_cloud_msg.header = point_cloud_2_msg.header;
-
-  filtered_point_cloud_publisher_.publish(point_cloud_msg);
-
-  // ROS_INFO("ptc1: %i" , point_cloud_msg.points.size());
-  // ROS_INFO("ptc2: %i" , point_cloud_2_msg.points.size());
-
-  // point_cloud_msg.header.frame_id = "base_frame";
-
+  // filtered_point_cloud_publisher_.publish(point_cloud_msg);
 
 	point_cloud_msg.header = point_cloud_2_msg.header;
 
@@ -313,8 +296,8 @@ void PointCloudCallback(const sensor_msgs::PointCloud2& point_cloud_2_msg) {
   // R(2, 2) = 1.0;
 
 
-  // const Vector3f T(0.0, 0.0, 0.5);
-  const Vector3f T(0.0, 0.0, kinect_height);
+  const Vector3f T(0.0, 0.0, 0.0);
+  // const Vector3f T(0.0, 0.0, kinect_height);
 
   for(int i = 0; i<(int)point_cloud_msg.points.size(); i++){
     Vector3f P(point_cloud_msg.points[i].x, point_cloud_msg.points[i].y, point_cloud_msg.points[i].z);
@@ -331,7 +314,7 @@ void PointCloudCallback(const sensor_msgs::PointCloud2& point_cloud_2_msg) {
 
 
   full_point_cloud = trans_pnt_cloud;
-  filtered_point_cloud_publisher_2.publish(full_point_cloud);
+  // filtered_point_cloud_publisher_2.publish(full_point_cloud);
 
   // filtered_point_cloud_publisher_.publish(full_point_cloud);
 
@@ -356,7 +339,7 @@ void updateClouds(){
   Vector3f P0;
   // Extract filtered point cloud.
   RANSAC_MOD(point_cloud, &n, &P0);
-  FindInliersFloorObs(n, P0, kEpsilon, point_cloud, &filtered_point_cloud_ground, &filtered_point_cloud_obstacles);
+  FindInliersFloorObs(n, P0, kEpsilonCollect, point_cloud, &filtered_point_cloud_ground, &filtered_point_cloud_obstacles);
 
   // Copy over the output for ground points.
   ground_point_cloud.points.resize(filtered_point_cloud_ground.size());
@@ -373,7 +356,8 @@ void updateClouds(){
   }
 
   //TEST WHAT THE POINT CLOUD CONTAIN
-  filtered_point_cloud_publisher_.publish(obstacles_point_cloud);
+  filtered_point_cloud_publisher_.publish(ground_point_cloud);
+  filtered_point_cloud_publisher_2.publish(obstacles_point_cloud);
 
 }
 
@@ -451,6 +435,7 @@ int main(int argc, char **argv) {
   ros::Subscriber point_cloud_subscriber =
 
     n.subscribe("/COMPSCI403/PointCloud", 3, PointCloudCallback);
+    // n.subscribe("/depth/camera/points", 3, PointCloudCallback);
 
 
     ros::Rate loop(2);
