@@ -19,6 +19,7 @@
 #include "KBSL/FindInliersSrv.h"
 #include "KBSL/FitBestPlaneSrv.h"
 #include "KBSL/PlaneParametersMsg.h"
+#include "AudioAPI.h"
 
 // #include <pcl_conversions/pcl_conversions.h>
 // #include <pcl/point_types.h>

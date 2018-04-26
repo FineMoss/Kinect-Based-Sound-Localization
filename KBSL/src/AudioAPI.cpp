@@ -1,30 +1,5 @@
-
-#include <SFML/Audio.hpp>
-#include <math.h>
-#include <unistd.h>
-#include <vector>
-
-using namespace std;
-
-
-class Sound {
-
-public:
-
-	Sound();
-	void scan_to_sound(vector<float>, vector<float>);
-	void set_volume(float);
-
-private:
-
-	sf::SoundBuffer buffer;
-	sf::Sound sound;
-	void set_pitch(float);
-	void set_position(float, float, float);
-	void set_play();
-	void set_pause();
-
-};
+	
+#include <AudioAPI.h>
 
 	// initializes the sound object
 	// a sin wave is stored in the sound buffer
@@ -138,34 +113,3 @@ private:
 		}
 
 	}
-
-
-
-
-
-
-// for testing
-int main() {
-
-	Sound sound;
-
-
-	std::vector<float> angle;
-
-	std::vector<float> distance;
-	distance.push_back((float)10.0);
-	distance.push_back((float)0.0);
-	distance.push_back((float)0.0);
-	distance.push_back((float)0.0);
-	distance.push_back((float)0.0);
-
-	sound.scan_to_sound(angle, distance);
-
-	while(1) {
-		sleep(1);
-	}
-
-
-
-	return 0;
-}
