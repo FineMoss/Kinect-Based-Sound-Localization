@@ -251,6 +251,8 @@ void PointCloudCallback(const sensor_msgs::PointCloud2& point_cloud_2_msg) {
   // point_cloud_msg.header.frame_id = "base_frame";
 
 
+	point_cloud_msg.header = point_cloud_2_msg.header;
+
   sensor_msgs::PointCloud trans_pnt_cloud;
   trans_pnt_cloud.header = point_cloud_msg.header;
 
@@ -304,6 +306,7 @@ void PointCloudCallback(const sensor_msgs::PointCloud2& point_cloud_2_msg) {
   //   res.P_prime = ConvertVectorToPoint(P_prime);
 
   full_point_cloud = trans_pnt_cloud;
+  filtered_point_cloud_publisher_.publish(full_point_cloud);
 
   // filtered_point_cloud_publisher_.publish(full_point_cloud);
 
@@ -396,6 +399,7 @@ int main(int argc, char **argv) {
   filtered_point_cloud_publisher_2 = n.advertise<sensor_msgs::PointCloud>("/COMPSCI403/PCloud", 3);
 
   ros::Subscriber point_cloud_subscriber =
+
     n.subscribe("/COMPSCI403/PointCloud", 3, PointCloudCallback);
 
 
