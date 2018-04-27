@@ -149,11 +149,31 @@ private:
   }
 
 
+
+
+
+
+
+
+
+/*-----------------------------------------End Sound----------------------------------------------*/
+
+/*-----------------------------------------Begin Obs----------------------------------------------*/
+
+
+
+
+
+
+
+
+
+
 //USER PARAMETERS
 double kinect_angle = 20.0;
 double kinect_height = 1.3;
-double user_width = 0.1;
-double user_height = 0.8;
+double user_width = 0.2;
+double user_height = 1.7;
 
 float adjusted_height = kinect_height;
 
@@ -490,13 +510,14 @@ void obsAvoid(){
 
   int numPaths = 5;
 
+  //calculate min&max angle
   Vector3f originStraight = Vector3f(1,0,0);
   Vector3f originLeft = Vector3f(x_max,y_min,0)/Vector3f(x_max,y_min,0).norm();
   Vector3f originRight = Vector3f(x_max,y_max,0)/Vector3f(x_max,y_max,0).norm();
 
-  float min_ang = acos(originLeft.dot(originStraight) / (originLeft.norm() * originStraight.norm()));
-  min_ang *= -1.0;
-  float max_ang = acos(originRight.dot(originStraight) / (originRight.norm() * originStraight.norm()));
+  float min_ang = -24.0*(PI/180.0); //acos(originLeft.dot(originStraight) / (originLeft.norm() * originStraight.norm()));
+  //min_ang *= -1.0;
+  float max_ang = 24.0*(PI/180.0); //acos(originRight.dot(originStraight) / (originRight.norm() * originStraight.norm()));
 
   float ang_diff = max_ang - min_ang;
   if(ang_diff < 0) ang_diff *= -1;
@@ -504,6 +525,8 @@ void obsAvoid(){
 
   Vector3f near = Vector3f(0, origin.y() - (user_width/(float)2), origin.z() - kinect_height);
   Vector3f far = Vector3f(0, origin.y() + (user_width/(float)2), origin.z() + (user_height - kinect_height));
+  // Vector3f near = Vector3f(0, -0.1, -100.0);
+  // Vector3f far = Vector3f(0, 0.1, 100.0);
 
   vector<float> ang_vec;
   vector<float> dist_vec;
@@ -519,11 +542,16 @@ void obsAvoid(){
 
   for (int i = 0; i<(int)temp_cloud.points.size(); i++){
     Vector3f currPnt = ConvertPointToVector(temp_cloud.points[i]);
+    currPnt = Vector3f(currPnt.y(), currPnt.x(), currPnt.z());
+
+    // ROS_INFO("OG-\n x:%f y:%f z:%f", currPnt.x(), currPnt.y(), currPnt.z());
+
     float x = currPnt.x() * cos(rot_init) + currPnt.y() * sin(rot_init);
     float y = -1*currPnt.x() * sin(rot_init) + currPnt.y() * cos(rot_init);
     currPnt = Vector3f(x, y, currPnt.z()); //R0 * currPnt;
 
     for(int j = 0; j<(int)ang_vec.size(); j++){
+      // ROS_INFO("R%i-\n x:%f y:%f z:%f", j, currPnt.x(), currPnt.y(), currPnt.z());
       x = currPnt.x() * cos(ang_unit) + currPnt.y() * sin(ang_unit);
       y = -1*currPnt.x() * sin(ang_unit) + currPnt.y() * cos(ang_unit);
       currPnt = Vector3f(x, y, currPnt.z()); //R0 * currPnt;
@@ -534,16 +562,18 @@ void obsAvoid(){
     }
 
   }
-  // float test = dist_vec[0];
-  // printf("1: %f\n", test);
-  // test = dist_vec[1];
-  // printf("2: %f\n", test);
-  // test = dist_vec[2];
-  // printf("3: %f\n", test);
-  // test = dist_vec[3];
-  // printf("4: %f\n", test);
-  // test = dist_vec[4];
-  // printf("5: %f\n\n", test);
+
+  float test = dist_vec[0];
+  printf("1: %f\n", test);
+  test = dist_vec[1];
+  printf("2: %f\n", test);
+  test = dist_vec[2];
+  printf("3: %f\n", test);
+  test = dist_vec[3];
+  printf("4: %f\n", test);
+  test = dist_vec[4];
+  printf("5: %f\n\n", test);
+
 }
 
 int main(int argc, char **argv) {
