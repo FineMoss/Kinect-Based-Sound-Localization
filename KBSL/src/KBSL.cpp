@@ -176,6 +176,7 @@ double user_width = 0.2;
 double user_height = 1.7;
 
 float max_sensor_dist = 100;
+float min_sensor_dist = 1;
 
 Vector3f floor_norm(1.0,0,0);
 float norm_tol = 1.0;
@@ -187,7 +188,10 @@ sensor_msgs::PointCloud full_point_cloud;
 sensor_msgs::PointCloud ground_point_cloud;
 sensor_msgs::PointCloud obstacles_point_cloud;
 
+float x_min = max_sensor_dist;
+float x_max = -1*max_sensor_dist;
 float y_min = max_sensor_dist;
+float y_max = -1*max_sensor_dist;
 
 //DownSampled PointCloud ----- Convert These to Sound
 vector<float> angles;
@@ -196,6 +200,7 @@ vector<float> angle_distances;
 // Publisher for 3D plane filtered point clouds.
 ros::Publisher filtered_point_cloud_publisher_;
 ros::Publisher filtered_point_cloud_publisher_2;
+ros::Publisher filtered_point_cloud_publisher_3;
 
 // RANSAC parameters.
 static const int kIterations = 55;
@@ -262,8 +267,20 @@ void FindInliers(const Vector3f& n, const Vector3f& P0, float epsilon,
 void FindInliersFloorObs(const Vector3f& n, const Vector3f& P0, float epsilon,
     const vector<Vector3f>& point_cloud, vector<Vector3f>* inliers, vector<Vector3f>* outliers) {
 
+  x_min = max_sensor_dist;
+  x_max = -1* max_sensor_dist;
+  y_min = max_sensor_dist;
+  y_max = -1* max_sensor_dist;
+
+    
+
   inliers->clear();
   for (size_t i = 0; i < point_cloud.size(); ++i) {
+
+    if(point_cloud[i].x() < x_min and point_cloud[i].x() > min_sensor_dist) x_min = point_cloud[i].x();
+    if(point_cloud[i].x() > x_max) x_max = point_cloud[i].x();
+    if(point_cloud[i].y() < y_min) y_min = point_cloud[i].y();
+    if(point_cloud[i].y() > y_max) y_max = point_cloud[i].y();
 
     if (fabs((point_cloud[i] - P0).dot(n)) < epsilon) {
       inliers->push_back(point_cloud[i]);
@@ -507,6 +524,7 @@ void obsAvoid(){
 
   sensor_msgs::PointCloud temp_cloud = obstacles_point_cloud;
 
+  //Obstancle Avoidance
   for (int i = 0; i<(int)temp_cloud.points.size(); i++){
     Vector3f currPnt = ConvertPointToVector(temp_cloud.points[i]);
     currPnt = Vector3f(currPnt.y(), currPnt.x(), currPnt.z());
@@ -530,19 +548,96 @@ void obsAvoid(){
 
   }
 
+  // Construct Ground Obstacle Grid
+  // Z<0 -> No Obstacle else Obstacle
+
+  int num_ground_points = 15;
+  int obsArr[num_ground_points][num_ground_points] = {0};
+  vector<Vector3f> ground_obs;
+
+  float x_ground_diff = x_max - x_min;
+  float y_ground_diff = y_max - y_min;
+
+  float x_ground_step = x_ground_diff/(float)num_ground_points;
+  float y_ground_step = y_ground_diff/(float)num_ground_points;
+  temp_cloud = ground_point_cloud;
+
+  temp_cloud = ground_point_cloud;
+  for(int i = 0; i<(int)temp_cloud.points.size(); i++){
+    Vector3f currPnt = ConvertPointToVector(temp_cloud.points[i]);
+    int x_ind = (int)((currPnt.x()-x_min)/x_ground_step);
+    int y_ind = (int)((currPnt.y()-y_min)/y_ground_step);
+    
+    if(x_ind >= num_ground_points) x_ind = num_ground_points-1;
+    if(y_ind >= num_ground_points) y_ind = num_ground_points-1;
+
+    obsArr[x_ind][y_ind] = 1;
+  }
+
+  for(int i = 0; i<num_ground_points; i++){
+    for(int j = 0; j<num_ground_points; j++){
+      float z_val = -1.0;
+      if(obsArr[i][j]>0) z_val = 1.0;
+      Vector3f new_pnt = Vector3f(x_min+(0.5*x_ground_step)+(i*x_ground_step), y_min+(0.5*y_ground_step)+(j*y_ground_step), z_val);
+      ground_obs.push_back(new_pnt);
+    }
+  }
+
+  //Hole In Ground Avoidance
+  for (int i = 0; i<(int)ground_obs.size(); i++){
+    Vector3f currPnt = ground_obs[i];
+    currPnt = Vector3f(currPnt.y(), currPnt.x(), currPnt.z());
+
+    // ROS_INFO("OG-\n x:%f y:%f z:%f", currPnt.x(), currPnt.y(), currPnt.z());
+
+    float x = currPnt.x() * cos(rot_init) + currPnt.y() * sin(rot_init);
+    float y = -1*currPnt.x() * sin(rot_init) + currPnt.y() * cos(rot_init);
+    currPnt = Vector3f(x, y, currPnt.z()); //R0 * currPnt;
+
+    for(int j = 0; j<(int)ang_vec.size(); j++){
+      // ROS_INFO("R%i-\n x:%f y:%f z:%f", j, currPnt.x(), currPnt.y(), currPnt.z());
+      x = currPnt.x() * cos(ang_unit) + currPnt.y() * sin(ang_unit);
+      y = -1*currPnt.x() * sin(ang_unit) + currPnt.y() * cos(ang_unit);
+      currPnt = Vector3f(x, y, currPnt.z()); //R0 * currPnt;
+      //check if x,y parameters are within rectangle
+      if( currPnt.x() < dist_vec[j] and currPnt.z() < 0.0 and currPnt.x() >= min_sensor_dist and currPnt.y() > near.y() and currPnt.y() < far.y() and currPnt.z() > near.z() and currPnt.z() < far.z()){
+        dist_vec[j] = currPnt.x();
+      }
+    }
+
+  }
+
+
+
+  //TESTING
+
+  sensor_msgs::PointCloud temp_pnt_cloud_pub = obstacles_point_cloud;
+
+  temp_pnt_cloud_pub.points.resize(ground_obs.size());
+  for (size_t i = 0; i < ground_obs.size(); ++i) {
+    temp_pnt_cloud_pub.points[i] =
+        ConvertVectorToPoint(ground_obs[i]);
+  }
+
+  filtered_point_cloud_publisher_3.publish(temp_pnt_cloud_pub);
+
+  //END TESTING
+
+
+
   angle_distances = dist_vec;
   angles = ang_vec;
 
-  // float test = angle_distances[0];
-  // printf("1: %f\n", test);
-  // test = angle_distances[1];
-  // printf("2: %f\n", test);
-  // test = angle_distances[2];
-  // printf("3: %f\n", test);
-  // test = angle_distances[3];
-  // printf("4: %f\n", test);
-  // test = angle_distances[4];
-  // printf("5: %f\n\n", test);
+  float test = angle_distances[0];
+  printf("1: %f\n", test);
+  test = angle_distances[1];
+  printf("2: %f\n", test);
+  test = angle_distances[2];
+  printf("3: %f\n", test);
+  test = angle_distances[3];
+  printf("4: %f\n", test);
+  test = angle_distances[4];
+  printf("5: %f\n\n", test);
 
 }
 
@@ -552,11 +647,12 @@ int main(int argc, char **argv) {
 
   filtered_point_cloud_publisher_ = n.advertise<sensor_msgs::PointCloud>("/COMPSCI403/FilteredPointCloud", 3);
   filtered_point_cloud_publisher_2 = n.advertise<sensor_msgs::PointCloud>("/COMPSCI403/PCloud", 3);
+  filtered_point_cloud_publisher_3 = n.advertise<sensor_msgs::PointCloud>("/COMPSCI403/FloorGrid", 3);
 
   ros::Subscriber point_cloud_subscriber =
 
     n.subscribe("/COMPSCI403/PointCloud", 3, PointCloudCallback);
-    // n.subscribe("/depth/camera/points", 3, PointCloudCallback);
+    // n.subscribe("/depth/camera/points", 3, PointCloudCallback); 
 
 
     Sound sound;
