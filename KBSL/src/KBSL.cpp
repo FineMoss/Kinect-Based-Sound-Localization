@@ -563,16 +563,19 @@ void obsAvoid(){
 
   }
 
-  float test = dist_vec[0];
-  printf("1: %f\n", test);
-  test = dist_vec[1];
-  printf("2: %f\n", test);
-  test = dist_vec[2];
-  printf("3: %f\n", test);
-  test = dist_vec[3];
-  printf("4: %f\n", test);
-  test = dist_vec[4];
-  printf("5: %f\n\n", test);
+  angle_distances = dist_vec;
+  angles = ang_vec;
+  
+  // float test = angle_distances[0];
+  // printf("1: %f\n", test);
+  // test = angle_distances[1];
+  // printf("2: %f\n", test);
+  // test = angle_distances[2];
+  // printf("3: %f\n", test);
+  // test = angle_distances[3];
+  // printf("4: %f\n", test);
+  // test = angle_distances[4];
+  // printf("5: %f\n\n", test);
 
 }
 
