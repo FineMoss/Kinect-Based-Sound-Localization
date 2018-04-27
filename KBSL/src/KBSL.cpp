@@ -175,8 +175,6 @@ double kinect_height = 1.3;
 double user_width = 0.2;
 double user_height = 1.7;
 
-float adjusted_height = kinect_height;
-
 float max_sensor_dist = 100;
 
 Vector3f floor_norm(1.0,0,0);
@@ -189,13 +187,7 @@ sensor_msgs::PointCloud full_point_cloud;
 sensor_msgs::PointCloud ground_point_cloud;
 sensor_msgs::PointCloud obstacles_point_cloud;
 
-float x_min = max_sensor_dist;
-float x_max = -1*max_sensor_dist;
 float y_min = max_sensor_dist;
-float y_max = -1*max_sensor_dist;
-float z_min = max_sensor_dist;
-float z_max = -1*max_sensor_dist;
-
 
 //DownSampled PointCloud ----- Convert These to Sound
 vector<float> angles;
@@ -270,25 +262,8 @@ void FindInliers(const Vector3f& n, const Vector3f& P0, float epsilon,
 void FindInliersFloorObs(const Vector3f& n, const Vector3f& P0, float epsilon,
     const vector<Vector3f>& point_cloud, vector<Vector3f>* inliers, vector<Vector3f>* outliers) {
 
-  x_min = max_sensor_dist;
-  x_max = -1* max_sensor_dist;
-  y_min = max_sensor_dist;
-  y_max = -1* max_sensor_dist;
-  z_min = max_sensor_dist;
-  z_max = -1*max_sensor_dist;
-
   inliers->clear();
   for (size_t i = 0; i < point_cloud.size(); ++i) {
-
-    if(point_cloud[i].x() < x_min) x_min = point_cloud[i].x();
-    if(point_cloud[i].x() > x_max) x_max = point_cloud[i].x();
-    if(point_cloud[i].y() < y_min) y_min = point_cloud[i].y();
-    if(point_cloud[i].y() > y_max) y_max = point_cloud[i].y();
-    if(point_cloud[i].z() < z_min) z_min = point_cloud[i].z();
-    if(point_cloud[i].z() > z_max) z_max = point_cloud[i].z();
-
-    if(y_min < 0) adjusted_height = -1*y_min;
-    else adjusted_height = y_min;
 
     if (fabs((point_cloud[i] - P0).dot(n)) < epsilon) {
       inliers->push_back(point_cloud[i]);
@@ -510,14 +485,8 @@ void obsAvoid(){
 
   int numPaths = 5;
 
-  //calculate min&max angle
-  Vector3f originStraight = Vector3f(1,0,0);
-  Vector3f originLeft = Vector3f(x_max,y_min,0)/Vector3f(x_max,y_min,0).norm();
-  Vector3f originRight = Vector3f(x_max,y_max,0)/Vector3f(x_max,y_max,0).norm();
-
-  float min_ang = -24.0*(PI/180.0); //acos(originLeft.dot(originStraight) / (originLeft.norm() * originStraight.norm()));
-  //min_ang *= -1.0;
-  float max_ang = 24.0*(PI/180.0); //acos(originRight.dot(originStraight) / (originRight.norm() * originStraight.norm()));
+  float min_ang = -24.0*(PI/180.0);
+  float max_ang = 24.0*(PI/180.0);
 
   float ang_diff = max_ang - min_ang;
   if(ang_diff < 0) ang_diff *= -1;
@@ -525,8 +494,6 @@ void obsAvoid(){
 
   Vector3f near = Vector3f(0, origin.y() - (user_width/(float)2), origin.z() - kinect_height);
   Vector3f far = Vector3f(0, origin.y() + (user_width/(float)2), origin.z() + (user_height - kinect_height));
-  // Vector3f near = Vector3f(0, -0.1, -100.0);
-  // Vector3f far = Vector3f(0, 0.1, 100.0);
 
   vector<float> ang_vec;
   vector<float> dist_vec;
@@ -565,7 +532,7 @@ void obsAvoid(){
 
   angle_distances = dist_vec;
   angles = ang_vec;
-  
+
   // float test = angle_distances[0];
   // printf("1: %f\n", test);
   // test = angle_distances[1];
