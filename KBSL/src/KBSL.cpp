@@ -324,9 +324,9 @@ void FindInliersFloorObs(const Vector3f& n, const Vector3f& P0, float epsilon,
   inliers->clear();
   for (size_t i = 0; i < point_cloud.size(); ++i) {
 
-    if(point_cloud[i].x() < x_min and point_cloud[i].x() > min_sensor_dist) x_min = point_cloud[i].x();
+    if(point_cloud[i].x() < x_min) x_min = point_cloud[i].x();
     if(point_cloud[i].x() > x_max) x_max = point_cloud[i].x();
-    if(point_cloud[i].y() < y_min) y_min = point_cloud[i].y();
+    if(point_cloud[i].y() < y_min and point_cloud[i].y() > min_sensor_dist) y_min = point_cloud[i].y();
     if(point_cloud[i].y() > y_max) y_max = point_cloud[i].y();
 
     if (fabs((point_cloud[i] - P0).dot(n)) < epsilon) {
