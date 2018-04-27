@@ -37,6 +37,7 @@ class Sound {
 public:
   Sound();
   void scan_to_sound(vector<float>, vector<float>);
+  void scan_to_sound_2(vector<float>, vector<float>);
   void set_volume(float);
 
 private:
@@ -116,12 +117,12 @@ private:
       }
     }
     if (max_index == 0) {
-      sound.setPosition(0.f, 0.f, 10.f);
+      sound.setPosition(0.f, 0.f, -10.f);
       sound.setVolume(100.f);
       sf::Listener::setGlobalVolume(100.f);
     }
     else if(max_index == 1) {
-      sound.setPosition(0.f, 0.f, 5.f);
+      sound.setPosition(0.f, 0.f, -5.f);
       sound.setVolume(50.f);
       sf::Listener::setGlobalVolume(50.f);
     }
@@ -131,12 +132,12 @@ private:
       sf::Listener::setGlobalVolume(0.f);
     }
     else if(max_index == 3) {
-      sound.setPosition(0.f, 0.f, -5.f);
+      sound.setPosition(0.f, 0.f, 5.f);
       sound.setVolume(50.f);
       sf::Listener::setGlobalVolume(50.f);
     }
     else if(max_index == 4) {
-      sound.setPosition(0.f, 0.f, -10.f);
+      sound.setPosition(0.f, 0.f, 10.f);
       sound.setVolume(100.f);
       sf::Listener::setGlobalVolume(100.f);
     }
@@ -148,8 +149,54 @@ private:
     }
   }
 
+  void Sound::scan_to_sound_2(vector<float> angle, vector<float> distance) {  
+
+    for (int i = 0; i < (int)distance.size(); i++) {
+
+      if (distance.at(i) > 10) distance.at(i) = 10;
+      if (distance.at(i) < 1) distance.at(i) = 1;
+
+      if (i == 0) {
+        sound.setPosition(0.f, 0.f, -10.f);
+        sound.setVolume(100.f - distance.at(i) * 8);
+        sf::Listener::setGlobalVolume(100.f - distance.at(i) * 8);
+        sleep(0.5);
+      }
+      else if(i == 1) {
+        sound.setPosition(0.f, 0.f, -5.f);
+        sound.setVolume(100.f - distance.at(i) * 8);
+        sf::Listener::setGlobalVolume(100.f - distance.at(i) * 8);
+        sleep(0.5);
+      }
+      else if(i == 2) {
+        sound.setPosition(0.f, 0.f, 0.f);
+        sound.setVolume(100.f - distance.at(i) * 8);
+        sf::Listener::setGlobalVolume(100.f - distance.at(i) * 8);
+        sleep(0.5);
+      }
+      else if(i == 3) {
+        sound.setPosition(0.f, 0.f, 5.f);
+        sound.setVolume(100.f - distance.at(i) * 8);
+        sf::Listener::setGlobalVolume(100.f - distance.at(i) * 8);
+        sleep(0.5);
+      }
+      else if(i == 4) {
+        sound.setPosition(0.f, 0.f, 10.f);
+        sound.setVolume(100.f - distance.at(i) * 8);
+        sf::Listener::setGlobalVolume(100.f - distance.at(i) * 8);
+        sleep(0.5);
+      }
+      
+
+    }
+
+    // sound.setVolume(0.f);
+    // sf::Listener::setGlobalVolume(0.f);
+    // sleep(0.2);
 
 
+
+  }
 
 
 
@@ -651,8 +698,8 @@ int main(int argc, char **argv) {
 
   ros::Subscriber point_cloud_subscriber =
 
-    n.subscribe("/COMPSCI403/PointCloud", 3, PointCloudCallback);
-    // n.subscribe("/depth/camera/points", 3, PointCloudCallback); 
+    // n.subscribe("/COMPSCI403/PointCloud", 3, PointCloudCallback);
+    n.subscribe("/camera/depth/points", 3, PointCloudCallback); 
 
 
     Sound sound;
@@ -665,7 +712,7 @@ int main(int argc, char **argv) {
       updateClouds();
       obsAvoid();
 
-      sound.scan_to_sound(angles, angle_distances);
+      sound.scan_to_sound_2(angles, angle_distances);
 
       ros::spinOnce();
       loop.sleep();
