@@ -38,6 +38,7 @@ public:
   Sound();
   void scan_to_sound(vector<float>, vector<float>);
   void scan_to_sound_2(vector<float>, vector<float>);
+  void scan_to_sound_3(vector<float>, vector<float>);
   void set_volume(float);
 
 private:
@@ -47,6 +48,7 @@ private:
   void set_position(float, float, float);
   void set_play();
   void set_pause();
+  void wait();
 
 };
   // initializes the sound object
@@ -105,6 +107,12 @@ private:
   void Sound::set_pause() {
     sound.pause();
   }
+
+  void Sound::wait() {
+    sleep(1);
+    set_volume(0.f);
+    sleep(1);
+  }
   // angle -0.7, +0.7 in rad
   // distance in meters
   void Sound::scan_to_sound(vector<float> angle, vector<float> distance) {  
@@ -153,48 +161,110 @@ private:
 
     for (int i = 0; i < (int)distance.size(); i++) {
 
-      distance[i] = 5;
+      // distance[i] = 5;
 
       if (distance.at(i) > 10) distance.at(i) = 10;
       if (distance.at(i) < 1) distance.at(i) = 1;
 
+
+
+      if (i < 2) {
+        set_position(0.f, 0.f, -1.f);
+        set_volume(100.f - distance.at(i)*8.f);
+        wait();
+      }
+
+      if (i == 2) {
+        set_position(0.f, 0.f, 0.f);
+        set_volume(100.f - distance.at(i)*8.f);
+        wait();
+      }
+
+      if (i > 2) {
+        set_position(0.f, 0.f, 1.f);
+        set_volume(100.f - distance.at(i)*8.f);
+        wait();
+      }
+
+    }
+
+    sleep(2);
+
+  }
+
+  void Sound::scan_to_sound_3(vector<float> angle, vector<float> distance) {  
+
+    sound.setVolume(50.0f);
+     sf::Listener::setGlobalVolume(50.0f);
+
+     float p_change = 1.0;
+
+    for (int i = 0; i < (int)distance.size(); i++) {
+
+      // distance[i] = 5;
+
+      if (distance[i] > 10) distance[i] = 10;
+      if (distance[i] < 1) distance[i] = 1;
+
       if (i == 0) {
         sound.setPosition(0.f, 0.f, -10.f);
-        sound.setVolume(100.f - distance.at(i) * 8);
-        sf::Listener::setGlobalVolume(100.f - distance.at(i) * 8);
-        sleep(1);
       }
       else if(i == 1) {
-        sound.setPosition(0.f, 0.f, -5.f);
-        sound.setVolume(100.f - distance.at(i) * 8);
-        sf::Listener::setGlobalVolume(100.f - distance.at(i) * 8);
-        sleep(1);
+        sound.setPosition(5.f, 0.f, -5.f);
       }
       else if(i == 2) {
-        sound.setPosition(0.f, 0.f, 0.f);
-        sound.setVolume(100.f - distance.at(i) * 8);
-        sf::Listener::setGlobalVolume(100.f - distance.at(i) * 8);
-        sleep(1);
+        sound.setPosition(10.f, 0.f, 0.f);
       }
       else if(i == 3) {
-        sound.setPosition(0.f, 0.f, 5.f);
-        sound.setVolume(100.f - distance.at(i) * 8);
-        sf::Listener::setGlobalVolume(100.f - distance.at(i) * 8);
-        sleep(1);
+        sound.setPosition(5.f, 0.f, 5.f);
       }
       else if(i == 4) {
         sound.setPosition(0.f, 0.f, 10.f);
-        sound.setVolume(100.f - distance.at(i) * 8);
-        sf::Listener::setGlobalVolume(100.f - distance.at(i) * 8);
-        sleep(1);
       }
+
+      if (distance[i] <= 1) {
+        p_change = 6.0;
+      }
+      else if(distance[i] >= 1 and distance[i] <= 2) {
+        p_change = 5.0;
+      }
+      else if(distance[i] >= 2 and distance[i] <= 3) {
+        p_change = 4.0;
+      }
+      else if(distance[i] >= 3 and distance[i] <= 4) {
+       p_change = 3.0;
+      }
+      else if(distance[i] >= 4 and distance[i] <= 5) {
+        p_change = 2.0;
+      }
+      else if(distance[i] >= 5 and distance[i] <= 6) {
+        p_change = 1.0;
+      }
+      else if(distance[i] >= 6 and distance[i] <= 7) {
+        p_change = 0.8;
+      }
+      else if(distance[i] >= 7 and distance[i] <= 8) {
+        p_change = 0.4;
+      }
+      else if(distance[i] >= 8 and distance[i] <= 9) {
+        p_change = 0.2;
+      }
+      else if(distance[i] >= 9) {
+        p_change = 0.1;
+      }
+
+      Sound::set_pitch(p_change);
+      sleep(1);
+      Sound::set_pitch(1.0f/p_change);
       
 
     }
 
-    // sound.setVolume(0.f);
-    // sf::Listener::setGlobalVolume(0.f);
-    // sleep(0.2);
+    
+
+    sound.setVolume(0.f);
+    sf::Listener::setGlobalVolume(0.f);
+    sleep(1);
 
 
 
@@ -220,7 +290,7 @@ private:
 
 //USER PARAMETERS
 double kinect_angle = 20.0;
-double kinect_height = 1.3;
+double kinect_height = 0.9;
 double user_width = 0.2;
 double user_height = 1.7;
 
@@ -700,8 +770,8 @@ int main(int argc, char **argv) {
 
   ros::Subscriber point_cloud_subscriber =
 
-    n.subscribe("/COMPSCI403/PointCloud", 3, PointCloudCallback);
-    // n.subscribe("/camera/depth/points", 3, PointCloudCallback); 
+    // n.subscribe("/COMPSCI403/PointCloud", 3, PointCloudCallback);
+    n.subscribe("/camera/depth/points", 3, PointCloudCallback); 
 
 
     Sound sound;
@@ -714,7 +784,7 @@ int main(int argc, char **argv) {
       updateClouds();
       obsAvoid();
 
-      sound.scan_to_sound_2(angles, angle_distances);
+      sound.scan_to_sound_3(angles, angle_distances);
 
       ros::spinOnce();
       loop.sleep();
