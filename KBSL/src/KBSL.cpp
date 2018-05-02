@@ -241,16 +241,16 @@ private:
         p_change = 1.0;
       }
       else if(distance[i] >= 6 and distance[i] <= 7) {
-        p_change = 0.8;
+        p_change = 0.9;
       }
       else if(distance[i] >= 7 and distance[i] <= 8) {
-        p_change = 0.4;
+        p_change = 0.8;
       }
       else if(distance[i] >= 8 and distance[i] <= 9) {
-        p_change = 0.2;
+        p_change = 0.7;
       }
       else if(distance[i] >= 9) {
-        p_change = 0.1;
+        p_change = 0.7;
       }
 
       Sound::set_pitch(p_change);
