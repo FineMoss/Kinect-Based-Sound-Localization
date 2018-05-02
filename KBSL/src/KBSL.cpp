@@ -153,6 +153,8 @@ private:
 
     for (int i = 0; i < (int)distance.size(); i++) {
 
+      distance[i] = 5;
+
       if (distance.at(i) > 10) distance.at(i) = 10;
       if (distance.at(i) < 1) distance.at(i) = 1;
 
@@ -160,31 +162,31 @@ private:
         sound.setPosition(0.f, 0.f, -10.f);
         sound.setVolume(100.f - distance.at(i) * 8);
         sf::Listener::setGlobalVolume(100.f - distance.at(i) * 8);
-        sleep(0.5);
+        sleep(1);
       }
       else if(i == 1) {
         sound.setPosition(0.f, 0.f, -5.f);
         sound.setVolume(100.f - distance.at(i) * 8);
         sf::Listener::setGlobalVolume(100.f - distance.at(i) * 8);
-        sleep(0.5);
+        sleep(1);
       }
       else if(i == 2) {
         sound.setPosition(0.f, 0.f, 0.f);
         sound.setVolume(100.f - distance.at(i) * 8);
         sf::Listener::setGlobalVolume(100.f - distance.at(i) * 8);
-        sleep(0.5);
+        sleep(1);
       }
       else if(i == 3) {
         sound.setPosition(0.f, 0.f, 5.f);
         sound.setVolume(100.f - distance.at(i) * 8);
         sf::Listener::setGlobalVolume(100.f - distance.at(i) * 8);
-        sleep(0.5);
+        sleep(1);
       }
       else if(i == 4) {
         sound.setPosition(0.f, 0.f, 10.f);
         sound.setVolume(100.f - distance.at(i) * 8);
         sf::Listener::setGlobalVolume(100.f - distance.at(i) * 8);
-        sleep(0.5);
+        sleep(1);
       }
       
 
@@ -698,8 +700,8 @@ int main(int argc, char **argv) {
 
   ros::Subscriber point_cloud_subscriber =
 
-    // n.subscribe("/COMPSCI403/PointCloud", 3, PointCloudCallback);
-    n.subscribe("/camera/depth/points", 3, PointCloudCallback); 
+    n.subscribe("/COMPSCI403/PointCloud", 3, PointCloudCallback);
+    // n.subscribe("/camera/depth/points", 3, PointCloudCallback); 
 
 
     Sound sound;
