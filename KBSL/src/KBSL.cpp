@@ -38,7 +38,6 @@ public:
   Sound();
   void scan_to_sound(vector<float>, vector<float>);
   void scan_to_sound_2(vector<float>, vector<float>);
-  void scan_to_sound_3(vector<float>, vector<float>);
   void set_volume(float);
 
 private:
@@ -48,7 +47,6 @@ private:
   void set_position(float, float, float);
   void set_play();
   void set_pause();
-  void wait();
 
 };
   // initializes the sound object
@@ -107,12 +105,6 @@ private:
   void Sound::set_pause() {
     sound.pause();
   }
-
-  void Sound::wait() {
-    sleep(1);
-    set_volume(0.f);
-    sleep(1);
-  }
   // angle -0.7, +0.7 in rad
   // distance in meters
   void Sound::scan_to_sound(vector<float> angle, vector<float> distance) {  
@@ -159,68 +151,15 @@ private:
 
   void Sound::scan_to_sound_2(vector<float> angle, vector<float> distance) {  
 
-    for (int i = 0; i < (int)distance.size(); i++) {
+    float p_change = 1;
+    set_volume(50.f);
 
-      // distance[i] = 5;
+    for (int i = 0; i < (int)distance.size(); i++) {
 
       if (distance.at(i) > 10) distance.at(i) = 10;
       if (distance.at(i) < 1) distance.at(i) = 1;
 
 
-
-      if (i < 2) {
-        set_position(0.f, 0.f, -1.f);
-        set_volume(100.f - distance.at(i)*8.f);
-        wait();
-      }
-
-      if (i == 2) {
-        set_position(0.f, 0.f, 0.f);
-        set_volume(100.f - distance.at(i)*8.f);
-        wait();
-      }
-
-      if (i > 2) {
-        set_position(0.f, 0.f, 1.f);
-        set_volume(100.f - distance.at(i)*8.f);
-        wait();
-      }
-
-    }
-
-    sleep(2);
-
-  }
-
-  void Sound::scan_to_sound_3(vector<float> angle, vector<float> distance) {  
-
-    sound.setVolume(50.0f);
-     sf::Listener::setGlobalVolume(50.0f);
-
-     float p_change = 1.0;
-
-    for (int i = 0; i < (int)distance.size(); i++) {
-
-      // distance[i] = 5;
-
-      if (distance[i] > 10) distance[i] = 10;
-      if (distance[i] < 1) distance[i] = 1;
-
-      if (i == 0) {
-        sound.setPosition(0.f, 0.f, -10.f);
-      }
-      else if(i == 1) {
-        sound.setPosition(5.f, 0.f, -5.f);
-      }
-      else if(i == 2) {
-        sound.setPosition(10.f, 0.f, 0.f);
-      }
-      else if(i == 3) {
-        sound.setPosition(5.f, 0.f, 5.f);
-      }
-      else if(i == 4) {
-        sound.setPosition(0.f, 0.f, 10.f);
-      }
 
       if (distance[i] <= 1) {
         p_change = 6.0;
@@ -256,14 +195,12 @@ private:
       Sound::set_pitch(p_change);
       sleep(1);
       Sound::set_pitch(1.0f/p_change);
+
       
 
     }
 
-    
-
-    sound.setVolume(0.f);
-    sf::Listener::setGlobalVolume(0.f);
+    set_volume(0.f);
     sleep(1);
 
 
@@ -784,7 +721,7 @@ int main(int argc, char **argv) {
       updateClouds();
       obsAvoid();
 
-      sound.scan_to_sound_3(angles, angle_distances);
+      sound.scan_to_sound_2(angles, angle_distances);
 
       ros::spinOnce();
       loop.sleep();
